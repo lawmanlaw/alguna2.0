@@ -1,0 +1,1734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Solar Powered Intelligent Equipment Monitoring and Predictive Maintenance System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Narrow:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E3E6E9;--panel:#F5F6F7;--ink:#1D2227;--muted:#59626B;--line:#C8CED4;
+  --yellow:#D99A00;--ok:#2B8A57;--alarm:#C3322B;--sun:#D98A0B;--focus:#2463B5;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#15191D;--panel:#1D2227;--ink:#E4E8EC;--muted:#98A2AC;--line:#323A42;
+    --yellow:#F2B41C;--ok:#4DBB80;--alarm:#EF5E56;--sun:#F2A93A;--focus:#86B6F2;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15191D;--panel:#1D2227;--ink:#E4E8EC;--muted:#98A2AC;--line:#323A42;
+  --yellow:#F2B41C;--ok:#4DBB80;--alarm:#EF5E56;--sun:#F2A93A;--focus:#86B6F2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 14.5px/1.5 Archivo,"Segoe UI",system-ui,sans-serif}
+.page{max-width:1560px;margin:0 auto;padding:18px 18px 50px}
+header{margin-bottom:12px;display:flex;gap:16px;align-items:end;justify-content:space-between;flex-wrap:wrap}
+h1{font:700 clamp(24px,3.1vw,40px)/1.05 "Archivo Narrow","Arial Narrow",sans-serif;margin:0;max-width:30ch;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:72ch}
+button,select{font:500 13.5px Archivo,sans-serif;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 11px;cursor:pointer}
+button:hover{border-color:var(--yellow)}
+button.primary{background:var(--yellow);border-color:var(--yellow);color:#1D2227;font-weight:600}
+select{width:100%}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.top{display:grid;grid-template-columns:1fr 330px;gap:14px}
+.view{position:relative;height:min(70vh,680px);min-height:420px;border-radius:6px;overflow:hidden;background:#8fb8d8;touch-action:none;user-select:none}
+.view canvas{display:block;width:100%;height:100%;cursor:grab}
+.tag{position:absolute;left:0;top:0;pointer-events:none;font:600 12px/1.2 Archivo,sans-serif;color:#fff;background:rgba(18,22,26,.8);padding:4px 7px;border-radius:3px;white-space:nowrap;transform:translate(-50%,-135%);border-left:3px solid var(--c,#F2B41C)}
+.tag small{display:block;font-weight:400;opacity:.85}
+.hud{position:absolute;inset:10px 290px auto 10px;display:flex;gap:8px;pointer-events:none;flex-wrap:wrap}
+.hud>div{background:rgba(18,22,26,.8);color:#fff;border-radius:4px;padding:7px 11px;font-size:13px}
+.status{font:700 19px/1 "Archivo Narrow",sans-serif;display:flex;align-items:center;gap:8px}
+.status i{width:11px;height:11px;border-radius:50%;background:#4DBB80;display:inline-block}
+.status.alarm i{background:#EF5E56;animation:blink .6s steps(2) infinite}
+.status.off i{background:#777}
+@keyframes blink{50%{opacity:.2}}
+.batt{display:flex;align-items:center;gap:8px}
+.batt .cell{width:60px;height:12px;border:1.5px solid #fff;border-radius:2px;position:relative}
+.batt .cell b{position:absolute;inset:1px auto 1px 1px;background:#4DBB80;border-radius:1px}
+.toolbar{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 20px)}
+.toolbar button{background:rgba(18,22,26,.82);color:#fff;border-color:rgba(255,255,255,.18)}
+.toolbar button.primary{background:#F2B41C;color:#1D2227;border-color:#F2B41C}
+.toolbar button[aria-pressed="true"]{background:#fff;color:#1D2227}
+.tip{position:absolute;pointer-events:none;background:rgba(18,22,26,.9);color:#fff;font-size:12.5px;padding:4px 8px;border-radius:3px;transform:translate(12px,12px);white-space:nowrap;display:none}
+.hint{position:absolute;right:10px;bottom:10px;color:#fff;background:rgba(18,22,26,.55);font-size:12px;padding:4px 8px;border-radius:3px;pointer-events:none}
+/* info card */
+.info{position:absolute;left:12px;top:58px;width:min(370px,calc(100% - 24px));max-height:calc(100% - 120px);overflow:auto;background:rgba(250,250,248,.96);color:#1D2227;border-radius:6px;padding:16px 18px 14px;box-shadow:0 10px 40px rgba(0,0,0,.35);opacity:0;transform:translateX(-14px);pointer-events:none;transition:opacity .35s,transform .35s}
+.info.show{opacity:1;transform:none;pointer-events:auto}
+.info .ctop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;color:#59626B}
+.info .chip{background:#1D2227;color:#F2B41C;font-weight:600;padding:3px 8px;border-radius:3px}
+.info h3{font:700 27px/1.05 "Archivo Narrow",sans-serif;margin:10px 0 8px}
+.info p{margin:0 0 10px;font-size:14.5px;line-height:1.55}
+.info ul{margin:0 0 10px;padding-left:18px;font-size:13.5px;color:#39424B}
+.info li{margin-bottom:3px}
+.info .liveline{font-size:13.5px;background:#EEF1E9;border-left:3px solid #2B8A57;padding:6px 9px;margin-bottom:12px}
+.info .liveline.alarm{background:#F7E6E4;border-color:#C3322B}
+.info .cbtn{display:flex;gap:6px;justify-content:space-between}
+.info .cbtn button{background:#fff;color:#1D2227;border-color:#C8CED4}
+.info .cbtn button.primary{background:#F2B41C;border-color:#F2B41C}
+.info .drag{font-size:12px;color:#59626B;margin:8px 0 0}
+.veh{position:absolute;right:10px;top:10px;display:flex;background:rgba(18,22,26,.82);border-radius:5px;padding:3px;gap:3px}
+.veh button{background:transparent;border:0;color:#fff;padding:6px 11px;border-radius:3px}
+.veh button[aria-pressed="true"]{background:#F2B41C;color:#1D2227;font-weight:600}
+.view canvas{transition:opacity .25s}.view.swap canvas{opacity:0}
+.flowOverlay{position:absolute;right:10px;top:58px;width:230px;background:rgba(250,250,248,.93);border-radius:6px;padding:6px 8px;display:none}
+.flowOverlay #flow text{fill:#1D2227}
+.flowOverlay #flow .n{fill:#fff;stroke:#1D2227}
+.flowOverlay #flow .n.on{fill:#F2B41C}.flowOverlay #flow .n.ok{fill:#4DBB80}.flowOverlay #flow .n.alarm{fill:#EF5E56}
+/* side */
+.side{background:var(--panel);border:1px solid var(--line);border-radius:6px;height:min(70vh,680px);min-height:420px;overflow:auto}
+.scen{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 14px}
+details{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;padding:11px 14px;font:600 17px/1.2 "Archivo Narrow",sans-serif;list-style:none;display:flex;justify-content:space-between}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted)}
+details[open] summary::after{content:"–"}
+.grp{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+.row label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.row output{font-weight:600;white-space:nowrap}
+.row .h{font-size:12px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--yellow)}
+.bottom{display:grid;grid-template-columns:330px 1fr 330px;gap:14px;margin-top:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.card h2{font:600 18px/1.2 "Archivo Narrow",sans-serif;margin:0 0 8px}
+#flow{width:100%;height:auto;display:block}
+#flow .n{fill:var(--panel);stroke:var(--ink);stroke-width:1.4;transition:fill .15s;cursor:pointer}
+#flow .n:hover{stroke:var(--yellow);stroke-width:3}
+#flow .n.on{fill:var(--yellow)}
+#flow .n.ok{fill:var(--ok)}
+#flow .n.alarm{fill:var(--alarm)}
+#flow .n.sel{stroke:#F2B41C;stroke-width:4.5}
+#flow text{fill:var(--ink);font:600 11px Archivo,sans-serif;text-anchor:middle;pointer-events:none}
+#flow .t2{font-weight:400}
+#flow .edge{stroke:var(--muted);stroke-width:1.4;fill:none}
+#flow.off .n{opacity:.4}
+.live{font-size:13px;color:var(--muted);margin:6px 0 0}
+.chart{margin-bottom:10px}
+.chart .lab{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.chart .lab b{font-weight:600}
+.chart .lab span.over{color:var(--alarm);font-weight:600}
+.chart canvas{width:100%;height:78px;display:block}
+.key{font-size:12.5px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.key i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+.counts{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:10px}
+.counts div{background:var(--panel);padding:8px 10px;font-size:12.5px;color:var(--muted)}
+.counts b{display:block;font:600 24px/1.1 "Archivo Narrow",sans-serif;color:var(--ink)}
+#log{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto;font-size:13px}
+#log li{padding:6px 0 6px 10px;border-left:3px solid var(--line);margin-bottom:4px}
+#log li.alarm{border-color:var(--alarm)}#log li.ok{border-color:var(--ok)}#log li.power{border-color:var(--sun)}
+#log time{color:var(--muted);margin-right:6px}
+/* presentation mode */
+body.present .page{max-width:none;padding:10px 12px}
+body.present header p{display:none}
+body.present header{margin-bottom:8px}
+body.present h1{font-size:clamp(18px,2vw,26px);max-width:none}
+body.present .top{grid-template-columns:1fr}
+body.present .side,body.present .bottom{display:none}
+body.present .view{height:calc(100vh - 70px);min-height:360px}
+body.present .flowOverlay{display:block}
+body.present .hint{display:none}
+@media (max-width:1350px){.hint{display:none}}
+@media (max-width:1150px){.bottom{grid-template-columns:1fr 1fr}.bottom .card:nth-child(2){grid-column:1/-1;order:-1}}
+@media (max-width:820px){.top,.bottom{grid-template-columns:1fr}.side{height:auto}.bottom .card:nth-child(2){grid-column:auto}
+  .hud{right:10px}.info{top:auto;bottom:56px;max-height:46%}.veh{top:auto;bottom:56px;right:10px}.hint{display:none}body.present .flowOverlay{display:none}}
+@media (prefers-reduced-motion:reduce){.status.alarm i{animation:none}.info{transition:none}}
+
+/* ===================== Liquid glass ===================== */
+:root{
+  --ease-fluid:cubic-bezier(.22,1,.36,1);
+  --ease-soft:cubic-bezier(.4,0,.2,1);
+  --g-blur:saturate(165%) blur(20px);
+  --g-dark:linear-gradient(145deg,rgba(38,46,56,.60),rgba(14,18,23,.52));
+  --g-dark-edge:rgba(255,255,255,.22);
+  --g-light:linear-gradient(145deg,rgba(255,255,255,.80),rgba(255,255,255,.62));
+  --g-light-edge:rgba(255,255,255,.75);
+  --g-cast:0 10px 34px rgba(8,12,18,.30),0 2px 8px rgba(8,12,18,.18);
+  --g-inner:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -1px 0 rgba(255,255,255,.08),inset 0 0 24px rgba(255,255,255,.05);
+  --panel-glass:linear-gradient(150deg,rgba(255,255,255,.72),rgba(255,255,255,.42));
+  --panel-edge:rgba(255,255,255,.65);
+  --panel-cast:0 6px 22px rgba(18,26,36,.10),0 1px 3px rgba(18,26,36,.07);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --panel-glass:linear-gradient(150deg,rgba(54,64,76,.50),rgba(26,32,39,.42));
+  --panel-edge:rgba(255,255,255,.12);
+  --panel-cast:0 8px 26px rgba(0,0,0,.34);
+  --g-light:linear-gradient(145deg,rgba(40,48,58,.80),rgba(22,27,33,.70));
+  --g-light-edge:rgba(255,255,255,.16);
+  --g-inner:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.04);
+}}
+:root[data-theme="dark"]{
+  --panel-glass:linear-gradient(150deg,rgba(54,64,76,.50),rgba(26,32,39,.42));
+  --panel-edge:rgba(255,255,255,.12);
+  --panel-cast:0 8px 26px rgba(0,0,0,.34);
+  --g-light:linear-gradient(145deg,rgba(40,48,58,.80),rgba(22,27,33,.70));
+  --g-light-edge:rgba(255,255,255,.16);
+}
+/* a soft, lit backdrop gives the glass something to refract */
+body{
+  background:
+    radial-gradient(1100px 620px at 12% -8%,rgba(242,180,28,.16),transparent 62%),
+    radial-gradient(900px 560px at 92% 4%,rgba(77,187,128,.13),transparent 60%),
+    radial-gradient(1200px 800px at 60% 110%,rgba(36,99,181,.12),transparent 64%),
+    var(--bg);
+  background-attachment:fixed;
+}
+/* the shared specular sheen every glass surface carries */
+.glass{position:relative;isolation:isolate;-webkit-backdrop-filter:var(--g-blur);backdrop-filter:var(--g-blur)}
+.glass::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+  background:linear-gradient(135deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.07) 28%,transparent 52%,rgba(255,255,255,.05) 100%);
+}
+.glass>*{position:relative;z-index:2}
+
+/* --- surfaces floating over the 3D view --- */
+.hud>div,.veh,.toolbar button,.tip,.hint{
+  -webkit-backdrop-filter:var(--g-blur);backdrop-filter:var(--g-blur);
+  background:var(--g-dark);border:1px solid var(--g-dark-edge);
+  box-shadow:var(--g-cast),var(--g-inner);color:#fff;
+}
+.hud>div{border-radius:13px;padding:8px 13px;position:relative;overflow:hidden}
+.hud>div::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.3),rgba(255,255,255,.04) 40%,transparent 60%)}
+.hud>div>*{position:relative}
+.status i{box-shadow:0 0 10px currentColor}
+.status i{color:#4DBB80}
+.status.alarm i{color:#EF5E56}
+.status.off i{color:#8a8f94}
+.batt .cell{border-color:rgba(255,255,255,.7);border-radius:4px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+.batt .cell b{border-radius:3px;transition:width .5s var(--ease-soft),background .5s var(--ease-soft);
+  box-shadow:0 0 8px rgba(255,255,255,.25) inset}
+
+.veh{border-radius:14px;padding:4px;gap:4px;overflow:hidden}
+.veh button{border-radius:11px;transition:background .32s var(--ease-fluid),color .32s var(--ease-fluid),transform .3s var(--ease-fluid);box-shadow:none;background:transparent;border:0}
+.veh button:hover{background:rgba(255,255,255,.14)}
+.veh button[aria-pressed="true"]{background:linear-gradient(145deg,#F8C544,#DE9B07);color:#1D2227;box-shadow:0 2px 10px rgba(217,154,0,.45),inset 0 1px 0 rgba(255,255,255,.5)}
+
+.toolbar{gap:8px}
+.toolbar button{border-radius:12px;padding:8px 14px;overflow:hidden;
+  transition:transform .3s var(--ease-fluid),background .3s var(--ease-fluid),box-shadow .3s var(--ease-fluid),color .3s var(--ease-fluid)}
+.toolbar button::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.26),transparent 55%)}
+.toolbar button:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(8,12,18,.34),var(--g-inner);border-color:rgba(255,255,255,.4)}
+.toolbar button:active{transform:translateY(0) scale(.975)}
+.toolbar button.primary{background:linear-gradient(145deg,#F9C748,#DD9A06);color:#1D2227;border-color:rgba(255,255,255,.45);box-shadow:0 8px 22px rgba(201,133,8,.38),inset 0 1px 0 rgba(255,255,255,.6)}
+.toolbar button[aria-pressed="true"]{background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(236,240,243,.86));color:#1D2227;border-color:rgba(255,255,255,.9)}
+#bExplode{min-width:146px}
+#bPresent{min-width:150px}
+
+.tip{border-radius:10px;padding:6px 10px;display:block;opacity:0;transition:opacity .22s var(--ease-soft);transform:translate(14px,14px)}
+.tip.on{opacity:1}
+.hint{border-radius:10px;padding:6px 10px;opacity:.9}
+
+/* --- the explanation card --- */
+.info{
+  border-radius:18px;padding:18px 20px 16px;
+  -webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px);
+  background:var(--g-light);border:1px solid var(--g-light-edge);
+  box-shadow:0 18px 50px rgba(8,12,18,.30),0 2px 10px rgba(8,12,18,.14),var(--g-inner);
+  color:var(--ink);overflow:hidden auto;
+  transform:translateX(-18px) scale(.985);
+  transition:opacity .42s var(--ease-fluid),transform .42s var(--ease-fluid);
+}
+.info.show{transform:none}
+.ibody{transition:opacity .16s var(--ease-soft),transform .16s var(--ease-soft)}
+.ibody.out{opacity:0;transform:translateY(6px)}
+.info .ctop{color:var(--muted)}
+.info .chip{background:linear-gradient(145deg,#2A313A,#171C22);color:#F2B41C;border-radius:8px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+.info h3{color:var(--ink)}
+.info ul{color:var(--muted)}
+.info li{margin-bottom:4px}
+.info .liveline{border-radius:0 10px 10px 0;background:rgba(43,138,87,.13);border-left:3px solid var(--ok);
+  transition:background .35s var(--ease-soft),border-color .35s var(--ease-soft)}
+.info .liveline.alarm{background:rgba(195,50,43,.14);border-color:var(--alarm)}
+.info .cbtn{gap:8px;margin-top:2px}
+.info .cbtn button{border-radius:11px;padding:8px 14px;background:rgba(255,255,255,.55);border:1px solid var(--line);color:var(--ink);
+  transition:transform .28s var(--ease-fluid),background .28s var(--ease-fluid),box-shadow .28s var(--ease-fluid)}
+.info .cbtn button:hover{transform:translateY(-1px);background:rgba(255,255,255,.85);box-shadow:0 6px 16px rgba(8,12,18,.14)}
+.info .cbtn button:active{transform:scale(.97)}
+.info .cbtn button.primary{background:linear-gradient(145deg,#F9C748,#DD9A06);color:#1D2227;border-color:rgba(255,255,255,.5);box-shadow:0 6px 18px rgba(201,133,8,.34),inset 0 1px 0 rgba(255,255,255,.55)}
+.info .cbtn button:disabled{opacity:.4;pointer-events:none}
+.info .drag{color:var(--muted)}
+
+.flowOverlay{border-radius:16px;padding:10px 12px;
+  -webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+  background:var(--g-light);border:1px solid var(--g-light-edge);box-shadow:var(--g-cast),var(--g-inner)}
+
+/* --- tags --- */
+.tag{
+  -webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);
+  background:linear-gradient(145deg,rgba(32,39,48,.72),rgba(14,18,23,.60));
+  border:1px solid rgba(255,255,255,.18);border-left:3px solid var(--c,#F2B41C);
+  border-radius:10px;padding:5px 9px;box-shadow:0 6px 18px rgba(8,12,18,.3),inset 0 1px 0 rgba(255,255,255,.22);
+  opacity:0;transition:opacity .3s var(--ease-soft);will-change:left,top,opacity;
+}
+
+/* --- page panels --- */
+.view{border-radius:20px;box-shadow:0 18px 46px rgba(10,16,24,.22),0 2px 8px rgba(10,16,24,.12)}
+.side,.card{
+  background:var(--panel-glass);border:1px solid var(--panel-edge);border-radius:18px;
+  -webkit-backdrop-filter:saturate(150%) blur(16px);backdrop-filter:saturate(150%) blur(16px);
+  box-shadow:var(--panel-cast),inset 0 1px 0 rgba(255,255,255,.35);
+}
+.card{padding:14px 16px}
+.side details{border-bottom:1px solid rgba(255,255,255,.14)}
+.side details:last-child{border-bottom:0}
+summary{transition:color .25s var(--ease-soft)}
+summary:hover{color:var(--yellow)}
+.scen button,.side select{border-radius:11px;background:rgba(255,255,255,.42);border:1px solid var(--panel-edge);
+  transition:transform .26s var(--ease-fluid),background .26s var(--ease-fluid),box-shadow .26s var(--ease-fluid),border-color .26s var(--ease-fluid)}
+.scen button:hover{transform:translateY(-1px);background:rgba(255,255,255,.72);box-shadow:0 6px 16px rgba(18,26,36,.12);border-color:var(--yellow)}
+.scen button:active{transform:scale(.97)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .scen button,:root:not([data-theme="light"]) .side select{background:rgba(255,255,255,.07)}
+ :root:not([data-theme="light"]) .scen button:hover{background:rgba(255,255,255,.14)}
+ :root:not([data-theme="light"]) .info .cbtn button{background:rgba(255,255,255,.1)}
+ :root:not([data-theme="light"]) .info .cbtn button:hover{background:rgba(255,255,255,.18)}
+ :root:not([data-theme="light"]) .counts div{background:transparent}
+ :root:not([data-theme="light"]) .counts{background:rgba(255,255,255,.12)}
+}
+.counts{border-radius:12px;border-color:var(--panel-edge);background:rgba(18,26,36,.10)}
+.counts div{background:rgba(255,255,255,.34)}
+#log li{border-radius:0 8px 8px 0;background:rgba(255,255,255,.22);transition:background .3s var(--ease-soft);
+  animation:logIn .4s var(--ease-fluid) both}
+@keyframes logIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+input[type=range]{height:22px;background:transparent;-webkit-appearance:none;appearance:none}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:rgba(18,26,36,.16);box-shadow:inset 0 1px 2px rgba(0,0,0,.14)}
+input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:rgba(18,26,36,.16)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;margin-top:-5.5px;border-radius:50%;
+  background:linear-gradient(145deg,#FBD063,#DA9806);border:1px solid rgba(255,255,255,.55);
+  box-shadow:0 2px 7px rgba(140,95,0,.42),inset 0 1px 0 rgba(255,255,255,.7);
+  transition:transform .2s var(--ease-fluid),box-shadow .2s var(--ease-fluid)}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.14)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.06);box-shadow:0 2px 14px rgba(217,154,0,.6)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:linear-gradient(145deg,#FBD063,#DA9806)}
+.row output{transition:color .3s var(--ease-soft)}
+#flow .n{transition:fill .35s var(--ease-soft),stroke .25s var(--ease-soft),stroke-width .25s var(--ease-soft)}
+#dot{transition:none;filter:drop-shadow(0 0 4px rgba(242,180,28,.8))}
+.view.swap canvas{opacity:0}
+.view canvas{transition:opacity .28s var(--ease-soft)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .hud>div,.veh,.toolbar button,.tip,.hint,.tag{background:rgba(16,20,25,.92)}
+  .info,.flowOverlay{background:rgba(250,250,248,.98)}
+  .side,.card{background:var(--panel)}
+}
+
+/* --- fit and finish --- */
+.info{top:58px;max-height:calc(100% - 118px);scrollbar-width:thin;
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);mask-image:linear-gradient(#000 calc(100% - 26px),transparent)}
+.info::-webkit-scrollbar{width:7px}
+.info::-webkit-scrollbar-thumb{background:rgba(90,100,112,.34);border-radius:99px}
+.info .drag{margin-bottom:10px}
+body.present .info{top:58px;max-height:calc(100% - 126px)}
+/* deeper tint so white text stays readable over bright desert and crops */
+.toolbar button,.tip,.hint{background:linear-gradient(145deg,rgba(28,34,42,.74),rgba(10,14,18,.66))}
+.hud>div{background:linear-gradient(145deg,rgba(28,34,42,.70),rgba(10,14,18,.62))}
+.veh{background:linear-gradient(145deg,rgba(28,34,42,.74),rgba(10,14,18,.66))}
+.tag{background:linear-gradient(145deg,rgba(24,30,37,.82),rgba(10,14,18,.74));-webkit-backdrop-filter:none;backdrop-filter:none}
+/* panels sit on the page, not the canvas: gradient glass, no costly backdrop blur */
+.side,.card{-webkit-backdrop-filter:none;backdrop-filter:none}
+@media (max-width:820px){.info{top:auto;bottom:62px;max-height:44%}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <h1>Solar Powered Intelligent Equipment Monitoring and Predictive Maintenance System</h1>
+      <p id="lede">A self-powered monitor on a mining haul truck. Click any part, or any box in the flowchart, to see what it does.</p>
+    </div>
+  </header>
+
+  <div class="top">
+    <div class="view" id="view">
+      <canvas id="three"></canvas>
+      <div class="hud">
+        <div class="status" id="status"><i></i><span>Normal</span></div>
+        <div id="clock">Day 1, 11:00</div>
+        <div class="batt"><span>Battery</span><span class="cell"><b id="battFill"></b></span><span id="battPct">80%</span><span id="pvNow"></span></div>
+      </div>
+      <div class="flowOverlay" id="flowOverlay"></div>
+      <div class="veh" id="vehSwitch" role="group" aria-label="Machine being monitored"><button type="button" data-veh="truck" aria-pressed="true">Mining haul truck</button><button type="button" data-veh="tractor" aria-pressed="false">Farm tractor</button></div>
+      <div class="info" id="info" role="dialog" aria-live="polite">
+        <div class="ibody" id="iBody">
+        <div class="ctop"><span class="chip" id="iStep">START</span><span id="iCount">1 of 13</span></div>
+        <h3 id="iTitle"></h3>
+        <p id="iText"></p>
+        <ul id="iSpecs"></ul>
+        <div class="liveline" id="iLive"></div>
+        <div class="cbtn"><button type="button" id="iPrev">Previous</button><button type="button" id="iClose">Close</button><button type="button" class="primary" id="iNext">Next</button></div>
+        <p class="drag">Drag the part to turn it. Arrow keys step through, Esc closes.</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="primary" id="bTour">Explain the system</button>
+        <button type="button" id="bExplode" aria-pressed="false">Break apart</button>
+        <button type="button" id="bPresent" aria-pressed="false">Presentation mode</button>
+        <button type="button" id="bDump">Dump the load</button>
+        <button type="button" id="bReset">Reset view</button>
+      </div>
+      <div class="tip" id="tip"></div>
+      <div class="hint">Drag to orbit, scroll to zoom, click a part</div>
+    </div>
+    <form class="side" id="controls" onsubmit="return false">
+      <details open><summary>Quick scenarios</summary><div class="scen" id="scen"></div></details>
+    </form>
+  </div>
+
+  <div class="bottom">
+    <div class="card" id="flowCard">
+      <h2>Operating flowchart, running live</h2>
+      <div id="flowHome">
+      <svg id="flow" viewBox="0 0 360 475" role="img" aria-label="Operating flowchart. Click a step to explain it.">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7a838c"/></marker></defs>
+        <g>
+          <path class="edge" marker-end="url(#ah)" d="M180,44V62"/>
+          <path class="edge" marker-end="url(#ah)" d="M180,98V128"/>
+          <path class="edge" marker-end="url(#ah)" d="M180,166V196"/>
+          <path class="edge" marker-end="url(#ah)" d="M180,232V252"/>
+          <path class="edge" marker-end="url(#ah)" d="M98,290H80V356"/>
+          <path class="edge" marker-end="url(#ah)" d="M262,290H280V356"/>
+          <path class="edge" marker-end="url(#ah)" d="M80,396V430H166"/>
+          <path class="edge" marker-end="url(#ah)" d="M280,396V430H194"/>
+          <path class="edge" marker-end="url(#ah)" d="M180,443V460H350V147H252"/>
+        </g>
+        <ellipse id="f-start" data-step="start" class="n" cx="180" cy="28" rx="62" ry="16"/><text x="180" y="32">START</text>
+        <rect id="f-init" data-step="init" class="n" x="110" y="62" width="140" height="36"/><text x="180" y="77">Initialise MCU</text><text x="180" y="91" class="t2">and sensors</text>
+        <polygon id="f-read" data-step="read" class="n" points="122,128 262,128 238,166 98,166"/><text x="180" y="143">Read temperature,</text><text x="180" y="157" class="t2">vibration, current</text>
+        <rect id="f-filter" data-step="filter" class="n" x="110" y="196" width="140" height="36"/><text x="180" y="211">Filter / average</text><text x="180" y="225" class="t2">sensor readings</text>
+        <polygon id="f-compare" data-step="compare" class="n" points="180,252 262,290 180,328 98,290"/><text x="180" y="287">COMPARE</text><text x="180" y="301" class="t2">with normal limits</text>
+        <text x="72" y="282" class="t2">Yes</text><text x="290" y="282" class="t2">No</text>
+        <rect id="f-normal" data-step="normal" class="n" x="20" y="356" width="120" height="40"/><text x="80" y="373">NORMAL</text><text x="80" y="388" class="t2">Log data</text>
+        <rect id="f-abnormal" data-step="abnormal" class="n" x="220" y="356" width="120" height="40"/><text x="280" y="373">ABNORMAL</text><text x="280" y="388" class="t2">Raise warning/alarm</text>
+        <circle id="f-loop" data-step="loop" class="n" cx="180" cy="430" r="13"/><text x="180" y="434">1</text>
+        <text x="180" y="473" class="t2">LOOPBACK</text>
+        <circle id="dot" r="6" fill="#F2B41C" stroke="#1D2227" stroke-width="1.5" cx="180" cy="147" style="pointer-events:none"/>
+      </svg>
+      </div>
+      <p class="live" id="liveVals"></p>
+    </div>
+
+    <div class="card">
+      <h2>Sensor readings</h2>
+      <div class="key"><span><i style="background:var(--muted);opacity:.6"></i>Raw reading</span><span><i style="background:var(--yellow)"></i>After filter</span><span><i style="background:var(--alarm)"></i>Limit</span></div>
+      <div class="chart"><div class="lab"><b>Vibration, rear axle bearing</b><span id="vVib"></span></div><canvas id="cVib"></canvas></div>
+      <div class="chart"><div class="lab"><b>Temperature, engine</b><span id="vTemp"></span></div><canvas id="cTemp"></canvas></div>
+      <div class="chart"><div class="lab"><b id="curLabel">Current, drive and hoist cable</b><span id="vCur"></span></div><canvas id="cCur"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2 id="mgrTitle">Fleet manager's view</h2>
+      <div class="counts">
+        <div><b id="nLogged">0</b>normal readings logged</div>
+        <div><b id="nAlarms">0</b>alarms raised</div>
+        <div><b id="nIgnored">0</b>bump spikes the filter ignored</div>
+        <div><b id="nOff">0 h</b>node offline, no power</div>
+      </div>
+      <ul id="log"></ul>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ================= Controls ================= */
+const CHEM={
+  lfp:{name:"LiFePO4, 12.8 V (recommended)",v:12.8,dod:.9},
+  sla:{name:"Sealed lead-acid, 12 V",v:12,dod:.5},
+  li:{name:"Li-ion pack, 11.1 V",v:11.1,dod:.8}
+};
+const hhmm=v=>{const h=Math.floor(v),m=Math.floor((v-h)*60);return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
+const GROUPS=[
+  {title:"Operating conditions",open:true,items:[
+    {id:"speed",label:"Vehicle speed",min:0,max:60,step:1,value:30,unit:" km/h"},
+    {id:"payload",label:"Payload in the bed",min:0,max:100,step:1,value:80,unit:"%"},
+    {id:"rough",label:"Terrain roughness",min:0,max:100,step:1,value:30,unit:"%",h:"0 is a graded haul road, 100 is a rocky pit floor."},
+    {id:"ambient",label:"Air temperature",min:5,max:50,step:1,value:32,unit:" °C"},
+    {id:"hour",label:"Time of day",min:0,max:23.99,step:.01,value:10.5,unit:"",fmt:v=>hhmm(v)},
+    {id:"timeScale",type:"select",label:"Clock speed",opts:{0:"Paused",60:"1 minute per second",600:"10 minutes per second",3600:"1 hour per second"},value:"60"},
+    {id:"cloud",label:"Cloud cover",min:0,max:100,step:1,value:10,unit:"%"}
+  ]},
+  {title:"Inject a fault",open:true,items:[
+    {id:"fBearing",label:"Worn wheel bearing",min:0,max:100,step:1,value:0,unit:"%",h:"Raises vibration and heats the drivetrain."},
+    {id:"fCool",label:"Cooling system problem",min:0,max:100,step:1,value:0,unit:"%"},
+    {id:"fElec",label:"Electrical fault",min:0,max:100,step:1,value:0,unit:"%",h:"Surging current in the drive cable."}
+  ]},
+  {title:"Edge logic (MCU)",items:[
+    {id:"loopHz",label:"Loops per second",min:.5,max:10,step:.5,value:2,unit:""},
+    {id:"win",label:"Averaging window",min:1,max:30,step:1,value:8,unit:" readings",h:"Set to 1 to switch the filter off and see false alarms."},
+    {id:"limVib",label:"Vibration limit",min:2,max:20,step:.1,value:7.1,unit:" mm/s"},
+    {id:"limTemp",label:"Temperature limit",min:60,max:150,step:1,value:105,unit:" °C"},
+    {id:"limCur",label:"Current limit",min:400,max:2000,step:10,value:950,unit:" A"}
+  ]},
+  {title:"Solar power loop",items:[
+    {id:"panelW",label:"Solar panel",min:5,max:100,step:1,value:20,unit:" W"},
+    {id:"chem",type:"select",label:"Battery type",opts:Object.fromEntries(Object.entries(CHEM).map(([k,c])=>[k,c.name])),value:"lfp"},
+    {id:"capAh",label:"Battery capacity",min:1,max:50,step:.5,value:7,unit:" Ah"},
+    {id:"nodeW",label:"Node draw, normal",min:.1,max:5,step:.05,value:.6,unit:" W",h:"MCU, three sensors and radio idling."},
+    {id:"radioW",label:"Extra draw while alarming",min:0,max:6,step:.1,value:2,unit:" W"}
+  ]}
+];
+const DEFAULTS={};
+const $=id=>document.getElementById(id);
+const form=$("controls");
+GROUPS.forEach(g=>{
+  const d=document.createElement("details"); if(g.open)d.open=true;
+  d.innerHTML=`<summary>${g.title}</summary><div class="grp"></div>`;
+  const body=d.querySelector(".grp");
+  g.items.forEach(it=>{
+    DEFAULTS[it.id]=it.value;
+    const r=document.createElement("div"); r.className="row";
+    if(it.type==="select"){
+      r.innerHTML=`<label for="${it.id}">${it.label}</label><select id="${it.id}">${Object.entries(it.opts).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select>`;
+      r.querySelector("select").value=it.value;
+    } else {
+      r.innerHTML=`<label for="${it.id}"><span id="${it.id}Label">${it.label}</span><output id="${it.id}Out"></output></label><input type="range" id="${it.id}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.value}">${it.h?`<div class="h" id="${it.id}Hint">${it.h}</div>`:""}`;
+    }
+    body.appendChild(r);
+  });
+  form.appendChild(d);
+});
+const ITEMS=GROUPS.flatMap(g=>g.items);
+const P={};
+function readControls(){
+  ITEMS.forEach(it=>{
+    const el=$(it.id);
+    P[it.id]=it.type==="select"?el.value:+el.value;
+    if(!it.type) $(it.id+"Out").textContent=it.fmt?it.fmt(+el.value):(+el.value)+it.unit;
+  });
+}
+const setCtrl=(id,v)=>{$(id).value=v;};
+form.addEventListener("input",e=>{ if(e.target.id==="hour") sim.hour=+e.target.value; readControls(); });
+
+function buildScenarios(){
+  const box=$("scen"); box.innerHTML="";
+  [...VEH.scen,["Reset",null]].forEach(([name,sc])=>{
+    const b=document.createElement("button"); b.type="button"; b.textContent=name;
+    b.onclick=()=>{
+      const vals=sc||Object.assign({},DEFAULTS,vehDefaults());
+      Object.entries(vals).forEach(([k,v])=>setCtrl(k,v));
+      if(vals.hour!==undefined) sim.hour=+vals.hour;
+      if(!sc){ sim.E=null; }
+      readControls(); addLog(`Scenario: ${name}.`,"power");
+    };
+    box.appendChild(b);
+  });
+}
+function vehDefaults(){const c=VEH.ctl;return {speed:c.speed.value,payload:c.payload.value,limCur:c.limCur.value,rough:c.rough.value};}
+readControls();
+
+/* ================= Simulation ================= */
+const sim={
+  hour:P.hour, day:1, E:null, on:true, boot:1.6, engineT:P.ambient+50,
+  acc:0, bump:0, path:"normal", logged:0, alarms:0, ignored:0, offH:0,
+  abnormal:false, dump:-1, last:null, pv:0, load:0,
+  buf:{vib:[],temp:[],cur:[]}, hist:{vib:[],temp:[],cur:[]}, prevRawOver:{vib:false,temp:false,cur:false}
+};
+const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function addLog(msg,cls){
+  const li=document.createElement("li"); li.className=cls||"";
+  li.innerHTML=`<time>D${sim.day} ${hhmm(sim.hour)}</time>${msg}`;
+  const log=$("log"); log.prepend(li); while(log.children.length>40) log.lastChild.remove();
+}
+const actionAmt=()=>{const T=sim.dump;return T<0?0:T<3?T/3:T<6?1:T<9?1-(T-6)/3:0;};
+const effSpeed=()=>sim.dump>=0?(VEH.sim.actionStops?0:P.speed*.5):P.speed;
+const effLoad=()=>VEH.key==="tractor"?P.payload/100*(1-actionAmt()):P.payload/100;
+
+function sample(){
+  const spd=effSpeed(), pay=effLoad(), rough=P.rough/100, S=VEH.sim;
+  const fb=P.fBearing/100, fc=P.fCool/100, fe=P.fElec/100;
+  if(Math.random() < rough*(spd/60)*1.8/P.loopHz){
+    const mag=5+Math.random()*14*rough; sim.bump+=mag; bodyKick(mag);
+  }
+  const b=sim.bump; sim.bump*=0.35;
+  const moving=spd>0?1:0.25, t=performance.now();
+  const vib=Math.max(0,0.8+spd*S.vibSpd+pay*.8*moving+Math.abs(gauss())*(0.4+rough*2.2)*(0.3+spd/40)+b+fb*(2.5+7*fb)*(0.4+spd/50)*(1+.15*Math.sin(t/300)));
+  sim.engineT+=(P.ambient+36+pay*22*moving+spd*.35+fc*48+fb*18+fe*6-sim.engineT)*0.03;
+  const temp=sim.engineT+gauss()*.8+b*.12;
+  let hoist=0; if(sim.dump>=0&&sim.dump<4) hoist=S.spike*Math.sin(Math.PI*sim.dump/4);
+  const cur=Math.max(0,S.curBase+pay*S.curLoad*moving+spd*S.curSpd+gauss()*S.curNoise+b*S.curBump+hoist+fe*(S.fault+S.faultVar*Math.abs(Math.sin(t/700))));
+  const raw={vib,temp,cur}, lim={vib:P.limVib,temp:P.limTemp,cur:P.limCur}, filt={}, over=[];
+  for(const k of ["vib","temp","cur"]){
+    const buf=sim.buf[k]; buf.push(raw[k]); while(buf.length>30) buf.shift();
+    const w=buf.slice(-P.win); filt[k]=w.reduce((a,c)=>a+c,0)/w.length;
+    const rOver=raw[k]>lim[k], fOver=filt[k]>lim[k];
+    if(rOver&&!sim.prevRawOver[k]&&!fOver) sim.ignored++;
+    sim.prevRawOver[k]=rOver;
+    if(fOver) over.push(k);
+    const h=sim.hist[k]; h.push([raw[k],filt[k]]); while(h.length>140) h.shift();
+  }
+  sim.last={raw,filt,lim,over};
+  const abn=over.length>0;
+  sim.path=abn?"abnormal":"normal";
+  const NAMES={vib:["Vibration","mm/s",1],temp:["Temperature","°C",0],cur:["Current","A",0]};
+  if(abn){
+    if(!sim.abnormal){
+      sim.alarms++; const k=over[0], n=NAMES[k];
+      addLog(`<b>Alarm raised.</b> ${n[0]} ${filt[k].toFixed(n[2])} ${n[1]} is over the ${lim[k]} ${n[1]} limit. Warning sent to fleet manager.`,"alarm");
+    }
+  } else { sim.logged++; if(sim.abnormal) addLog("Readings back within limits. Logging resumed.","ok"); }
+  sim.abnormal=abn;
+  VEH.packets.forEach(p=>p.t=0);
+  drawCharts();
+}
+
+/* ================= Flowchart ================= */
+const PATHS={
+  normal:[[180,147],[180,214],[180,290],[80,290],[80,376],[80,430],[180,430],[180,460],[350,460],[350,147],[180,147]],
+  abnormal:[[180,147],[180,214],[180,290],[280,290],[280,376],[280,430],[180,430],[180,460],[350,460],[350,147],[180,147]]
+};
+function pointOnPath(pts,t){
+  const segs=[];let total=0;
+  for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);segs.push(l);total+=l;}
+  let d=t*total;
+  for(let i=0;i<segs.length;i++){if(d<=segs[i]){const f=d/segs[i];return[pts[i][0]+(pts[i+1][0]-pts[i][0])*f,pts[i][1]+(pts[i+1][1]-pts[i][1])*f];}d-=segs[i];}
+  return pts[pts.length-1];
+}
+const FN=["start","init","read","filter","compare","normal","abnormal","loop"].reduce((o,k)=>(o[k]=$("f-"+k),o),{});
+function setFlow(t){
+  const flow=$("flow");
+  Object.values(FN).forEach(n=>n.classList.remove("on","ok","alarm"));
+  Object.entries(FN).forEach(([k,n])=>n.classList.toggle("sel",ui.stop>=0&&STOPS[ui.stop].step===k));
+  flow.classList.toggle("off",!sim.on);
+  const dot=$("dot");
+  if(!sim.on){dot.style.display="none";return;}
+  dot.style.display="";
+  if(sim.boot>0){(sim.boot>.8?FN.start:FN.init).classList.add("on");dot.setAttribute("cx",180);dot.setAttribute("cy",sim.boot>.8?28:80);return;}
+  const [x,y]=pointOnPath(PATHS[sim.path],t); dot.setAttribute("cx",x); dot.setAttribute("cy",y);
+  if(t<.1)FN.read.classList.add("on"); else if(t<.2)FN.filter.classList.add("on"); else if(t<.36)FN.compare.classList.add("on");
+  else if(t<.62)FN[sim.path].classList.add(sim.path==="normal"?"ok":"alarm"); else FN.loop.classList.add("on");
+}
+
+/* ================= Charts ================= */
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function drawChart(id,hist,limit,dec){
+  const cv=$(id); if(!cv.offsetParent) return;
+  const w=cv.clientWidth,h=cv.clientHeight,dpr=devicePixelRatio||1;
+  if(cv.width!==Math.round(w*dpr)){cv.width=w*dpr;cv.height=h*dpr;}
+  const x=cv.getContext("2d"); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,w,h);
+  if(!hist.length) return;
+  const vals=hist.flat(); let lo=Math.min(...vals,limit),hi=Math.max(...vals,limit); const pad=(hi-lo)*.12||1; lo-=pad; hi+=pad;
+  const X=i=>i/139*w, Y=v=>h-(v-lo)/(hi-lo)*h, off=140-hist.length;
+  x.fillStyle=css("--alarm"); x.globalAlpha=.08; x.fillRect(0,0,w,Y(limit)); x.globalAlpha=1;
+  x.setLineDash([4,3]); x.strokeStyle=css("--alarm"); x.lineWidth=1; x.beginPath(); x.moveTo(0,Y(limit)); x.lineTo(w,Y(limit)); x.stroke(); x.setLineDash([]);
+  x.strokeStyle=css("--muted"); x.globalAlpha=.55; x.beginPath(); hist.forEach((p,i)=>i?x.lineTo(X(i+off),Y(p[0])):x.moveTo(X(i+off),Y(p[0]))); x.stroke(); x.globalAlpha=1;
+  x.strokeStyle=css("--yellow"); x.lineWidth=2.2; x.beginPath(); hist.forEach((p,i)=>i?x.lineTo(X(i+off),Y(p[1])):x.moveTo(X(i+off),Y(p[1]))); x.stroke();
+  x.fillStyle=css("--muted"); x.font="11px Archivo, sans-serif"; x.fillText(limit.toFixed(dec),w-34,Math.max(11,Y(limit)-3));
+}
+function drawCharts(){
+  drawChart("cVib",sim.hist.vib,P.limVib,1); drawChart("cTemp",sim.hist.temp,P.limTemp,0); drawChart("cCur",sim.hist.cur,P.limCur,0);
+  const L=sim.last; if(!L) return;
+  const f=(k,d,u,el)=>{const o=L.filt[k]>L.lim[k]; $(el).innerHTML=`<span class="${o?"over":""}">${L.filt[k].toFixed(d)} ${u}</span>`;};
+  f("vib",1,"mm/s","vVib"); f("temp",0,"°C","vTemp"); f("cur",0,"A","vCur");
+  $("liveVals").textContent=`Last loop: vibration ${L.raw.vib.toFixed(1)} raw, ${L.filt.vib.toFixed(1)} after averaging ${P.win} reading${P.win>1?"s":""}.`;
+}
+/* ================= Renderer and environment ================= */
+const canvas=$("three"), view=$("view");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=.95;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,.1,1200); scene.add(camera);
+const lin=h=>new THREE.Color(h).convertSRGBToLinear();
+
+// environment map for reflections
+{
+  const envScene=new THREE.Scene();
+  const g=new THREE.SphereGeometry(50,32,16); const cols=[];
+  const top=lin(0x7fb3e0),hor=lin(0xf0dcc0),gnd=lin(0x7a5438);
+  const p=g.attributes.position;
+  for(let i=0;i<p.count;i++){const y=p.getY(i)/50;const c=y>0?hor.clone().lerp(top,Math.pow(y,.6)):hor.clone().lerp(gnd,Math.min(1,-y*3));cols.push(c.r,c.g,c.b);}
+  g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3));
+  envScene.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide})));
+  const sunb=new THREE.Mesh(new THREE.SphereGeometry(4,8,8),new THREE.MeshBasicMaterial({color:new THREE.Color(8,7,5)})); sunb.position.set(20,30,20); envScene.add(sunb);
+  const pm=new THREE.PMREMGenerator(renderer);
+  scene.environment=pm.fromScene(envScene,.02).texture;
+}
+
+// sky dome
+const skyU={top:{value:lin(0x6fa8dc)},bottom:{value:lin(0xd8e4ea)}};
+const sky=new THREE.Mesh(new THREE.SphereGeometry(900,32,16),new THREE.ShaderMaterial({
+  uniforms:skyU,side:THREE.BackSide,depthWrite:false,fog:false,
+  vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+  fragmentShader:`uniform vec3 top;uniform vec3 bottom;varying vec3 vW;void main(){float h=normalize(vW-cameraPosition).y;vec3 c=mix(bottom,top,pow(clamp(h*1.6+.02,0.,1.),.65));gl_FragColor=vec4(c,1.);
+  #include <tonemapping_fragment>
+  #include <encodings_fragment>
+  }`
+})); scene.add(sky);
+scene.fog=new THREE.Fog(0xd8e4ea,90,520);
+
+function canvasTex(w,h,draw,srgb=true){const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");draw(x,w,h);const t=new THREE.CanvasTexture(c);if(srgb)t.encoding=THREE.sRGBEncoding;t.anisotropy=renderer.capabilities.getMaxAnisotropy();return t;}
+const glowTex=canvasTex(128,128,(x,w)=>{const g=x.createRadialGradient(w/2,w/2,0,w/2,w/2,w/2);g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(.25,"rgba(255,255,255,.8)");g.addColorStop(1,"rgba(255,255,255,0)");x.fillStyle=g;x.fillRect(0,0,w,w);});
+const sunSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xfff0c8,fog:false,depthWrite:false,transparent:true})); sunSprite.scale.setScalar(90); scene.add(sunSprite);
+const stars=(()=>{const n=700,a=new Float32Array(n*3);for(let i=0;i<n;i++){const t=Math.random()*Math.PI*2,u=Math.random()*.9+.08;const r=850;a[i*3]=Math.cos(t)*Math.sqrt(1-u*u)*r;a[i*3+1]=u*r;a[i*3+2]=Math.sin(t)*Math.sqrt(1-u*u)*r;}
+  const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(a,3));
+  const p=new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:1.6,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false}));scene.add(p);return p;})();
+
+const hemi=new THREE.HemisphereLight(0xdfefff,0x7a5236,.35); scene.add(hemi);
+const sunL=new THREE.DirectionalLight(0xfff0d6,2.6); sunL.castShadow=true;
+sunL.shadow.mapSize.set(1536,1536); Object.assign(sunL.shadow.camera,{left:-14,right:14,top:14,bottom:-14,near:1,far:220});
+sunL.shadow.bias=-.0004; sunL.shadow.normalBias=.02; scene.add(sunL); scene.add(sunL.target);
+const focusLight=new THREE.PointLight(0xffffff,0,0); focusLight.position.set(2,3,1); camera.add(focusLight);
+
+/* ================= Materials and helpers ================= */
+const MATS=[];
+const fixCol=m=>{m.color.convertSRGBToLinear();if(m.emissive)m.emissive.convertSRGBToLinear();return m;};
+const std=(color,roughness=.6,metalness=.1,extra={})=>{const m=fixCol(new THREE.MeshStandardMaterial(Object.assign({color,roughness,metalness},extra)));MATS.push(m);return m;};
+const phys=(color,extra={})=>{const m=fixCol(new THREE.MeshPhysicalMaterial(Object.assign({color},extra)));MATS.push(m);return m;};
+const M={
+  paint:phys(0xe3a30c,{roughness:.38,metalness:.15,clearcoat:.6,clearcoatRoughness:.35}),
+  paintDirt:std(0xa37a28,.8,.1),
+  steel:std(0x3a3e43,.5,.6), dark:std(0x1e2022,.7,.2), chrome:std(0xe6e9ec,.12,1), alu:std(0xb9bec4,.32,.9),
+  rubber:std(0x151515,.92,0,{side:THREE.DoubleSide}), rim:std(0x50555b,.45,.6),
+  glass:phys(0x14222e,{roughness:.05,metalness:.1,clearcoat:1,envMapIntensity:1.6}),
+  cable:std(0xe2641c,.55,0), cableBlack:std(0x121212,.6,0),
+  enclosure:std(0xaeb3b8,.4,.15), darkPlastic:std(0x222528,.55,0), white:std(0xeceeee,.45,0),
+  battBlue:std(0x2c4c77,.45,.1), red:std(0xc62b25,.4,0), blueLever:std(0x2059b8,.4,0),
+  pcb:std(0x1b6a3a,.5,0), pcbBlue:std(0x1d3f87,.5,0), pcbBlack:std(0x151a1d,.5,0), chip:std(0x111111,.45,.1), gold:std(0xd6a84a,.3,1),
+  terminal:std(0x2f8a4d,.5,0), lensW:std(0xffffff,.1,0,{emissive:0xfff1c8,emissiveIntensity:0}), tail:std(0x8a0e0e,.3,0,{emissive:0xff1a1a,emissiveIntensity:.2}),
+  rock:std(0x8a6446,1,0,{flatShading:true}), rock2:std(0x6f5038,1,0,{flatShading:true}), ore:std(0x5b4a3d,1,0,{flatShading:true}), ore2:std(0x7d6650,1,0,{flatShading:true}),
+  orange:std(0xe8662a,.5,0), reflect:std(0xffffff,.2,0,{emissive:0xffffff,emissiveIntensity:.3})
+};
+const GEO={}; const dummy=new THREE.Object3D();
+function rboxGeo(w,h,d,r){
+  const key=[w,h,d,r].join("|"); if(GEO[key]) return GEO[key];
+  r=Math.max(.002,Math.min(r,w/2-.002,h/2-.002,d/2-.002));
+  const sw=w/2-r, sh=h/2-r, c=Math.min(r*.6,sw*.9,sh*.9);
+  const s=new THREE.Shape();
+  s.moveTo(-sw+c,-sh); s.lineTo(sw-c,-sh); s.quadraticCurveTo(sw,-sh,sw,-sh+c); s.lineTo(sw,sh-c); s.quadraticCurveTo(sw,sh,sw-c,sh);
+  s.lineTo(-sw+c,sh); s.quadraticCurveTo(-sw,sh,-sw,sh-c); s.lineTo(-sw,-sh+c); s.quadraticCurveTo(-sw,-sh,-sw+c,-sh);
+  const g=new THREE.ExtrudeGeometry(s,{depth:Math.max(.001,d-2*r),bevelEnabled:true,bevelThickness:r,bevelSize:r,bevelSegments:2,curveSegments:3});
+  g.center(); GEO[key]=g; return g;
+}
+function mk(geo,mat,parent,x=0,y=0,z=0,rx=0,ry=0,rz=0,shadow=true){const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=m.receiveShadow=shadow;parent.add(m);return m;}
+const RB=(w,h,d,r,mat,p,x,y,z,rx,ry,rz)=>mk(rboxGeo(w,h,d,r),mat,p,x,y,z,rx,ry,rz);
+const BX=(w,h,d,mat,p,x,y,z,rx,ry,rz)=>mk(new THREE.BoxGeometry(w,h,d),mat,p,x,y,z,rx,ry,rz);
+const CY=(rt,rb,h,mat,p,x,y,z,rx=0,ry=0,rz=0,seg=18)=>mk(new THREE.CylinderGeometry(rt,rb,h,seg),mat,p,x,y,z,rx,ry,rz);
+function tube(pts,r,mat,p,tension=.25){const c=new THREE.CatmullRomCurve3(pts.map(a=>new THREE.Vector3(...a)),false,"catmullrom",tension);const m=mk(new THREE.TubeGeometry(c,Math.max(12,pts.length*14),r,8,false),mat,p);m.userData.curve=c;return m;}
+function rod(a,b,r,mat,p,seg=10){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b);const m=mk(new THREE.CylinderGeometry(r,r,A.distanceTo(B),seg),mat,p);m.position.copy(A).add(B).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),B.clone().sub(A).normalize());return m;}
+function decal(tex,w,h,p,x,y,z,ry=0,rx=0){const mat=std(0xffffff,.55,0,{map:tex,transparent:true});const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);m.position.set(x,y,z);m.rotation.set(rx,ry,0);p.add(m);return m;}
+function textTex(lines,{w=512,h=256,bg="#1d2227",fg="#ffffff",font="Archivo Narrow, Arial Narrow, sans-serif",sizes=[90],border=null}={}){
+  return canvasTex(w,h,(x)=>{ if(bg){x.fillStyle=bg;x.fillRect(0,0,w,h);} if(border){x.strokeStyle=border;x.lineWidth=10;x.strokeRect(8,8,w-16,h-16);}
+    x.fillStyle=fg;x.textAlign="center";x.textBaseline="middle";
+    const total=lines.length; lines.forEach((l,i)=>{const s=sizes[i]||sizes[0];x.font=`700 ${s}px ${font}`;x.fillText(l,w/2,h*(i+1)/(total+1));});});
+}
+function jitterRock(r,seed){const g=new THREE.DodecahedronGeometry(r,1);const p=g.attributes.position;const map={};
+  for(let i=0;i<p.count;i++){const k=[p.getX(i),p.getY(i),p.getZ(i)].map(v=>v.toFixed(3)).join();if(!map[k])map[k]=.75+Math.abs(Math.sin(i*12.9898+seed*78.233))*.5;p.setXYZ(i,p.getX(i)*map[k],p.getY(i)*map[k]*.8,p.getZ(i)*map[k]);}
+  g.computeVertexNormals();return g;}
+const ROCKG=[jitterRock(1,1),jitterRock(1,2),jitterRock(1,3),jitterRock(1,4)];
+
+/* ================= Environments ================= */
+const noiseTex=(base,spots,size,rx,ry)=>{const t=canvasTex(size,size,(x)=>{x.fillStyle=base;x.fillRect(0,0,size,size);
+  for(let i=0;i<size*size/14;i++){x.fillStyle=spots[(Math.random()*spots.length)|0];x.globalAlpha=Math.random()*.55;const s=Math.random()*3+1;x.fillRect(Math.random()*size,Math.random()*size,s,s);}x.globalAlpha=1;});
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);return t;};
+const groundTex=noiseTex("#a37352",["#7c5236","#c0906a","#6d4a30","#caa27c","#8e6444"],512,90,90);
+function smooth(a,b,v){const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);}
+const ENVS={mine:{group:new THREE.Group(),movers:[]},farm:{group:new THREE.Group(),movers:[]}};
+Object.values(ENVS).forEach(e=>scene.add(e.group));
+let ENV=ENVS.mine;
+function addMover(obj){ENV.group.add(obj);ENV.movers.push(obj);return obj;}
+function makeGround(hf,colorFn,tint){
+  const g=new THREE.PlaneGeometry(1400,1400,220,220); g.rotateX(-Math.PI/2);
+  const p=g.attributes.position, cols=[], cc=new THREE.Color();
+  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),h=hf(x,z);p.setY(i,h);colorFn(cc,x,z,h);cols.push(cc.r,cc.g,cc.b);}
+  g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3)); g.computeVertexNormals();
+  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:groundTex,vertexColors:true,roughness:1,color:tint})); m.receiveShadow=true; return m;
+}
+function terrainH(x,z){
+  const az=Math.abs(z); const f=smooth(38,95,az);
+  let h=f*(5*Math.sin(x*.013+1)+4*Math.sin(z*.021)+2.5*Math.sin((x+z)*.037)+3)+42*smooth(150,380,az);
+  if(z<-120){const step=9;h=Math.floor(h/step)*step+(h%step)*.12;}
+  return h;
+}
+function farmH(x,z){const az=Math.abs(z);return smooth(22,80,az)*(2.5*Math.sin(x*.011)+2*Math.sin(z*.017+1)+2)+22*smooth(220,480,az);}
+{
+  const c1=lin(0xb88760),c2=lin(0x8f5e3e),c3=lin(0xd0a27a);
+  ENVS.mine.group.add(makeGround(terrainH,(cc,x,z,h)=>{const n=.5+.5*Math.sin(x*.07+Math.cos(z*.05)*2);cc.copy(c2).lerp(c1,n).lerp(c3,clamp(h/50,0,1)*.7);},0xd0c0b0));
+  const f1=lin(0x6f8f3c),f2=lin(0x9da352),f3=lin(0x7c6444),f4=lin(0x557a33);
+  ENVS.farm.group.add(makeGround(farmH,(cc,x,z,h)=>{
+    const px=Math.floor((x+700)/70),pz=Math.floor((z+700)/55),k=(px*7+pz*13)%4;
+    cc.copy([f1,f2,f3,f4][k]).lerp(f2,.25+.25*Math.sin(x*.05+z*.03));
+  },0xffffff));
+}
+const roadTex=canvasTex(1024,256,(x,w,h)=>{x.fillStyle="#b99373";x.fillRect(0,0,w,h);
+  for(let i=0;i<9000;i++){x.fillStyle=["#a17d60","#cdae92","#8f6e55","#d8bda3"][(Math.random()*4)|0];x.globalAlpha=Math.random()*.5;x.fillRect(Math.random()*w,Math.random()*h,Math.random()*3+1,Math.random()*3+1);}
+  x.globalAlpha=.18;x.fillStyle="#5d4533";[.2,.34,.66,.8].forEach(c=>x.fillRect(0,h*c-10,w,20));x.globalAlpha=1;});
+roadTex.wrapS=roadTex.wrapT=THREE.RepeatWrapping; roadTex.repeat.set(40,1);
+const roadMat=new THREE.MeshStandardMaterial({map:roadTex,roughness:.95,color:0xc9b6a6});
+const road=new THREE.Mesh(new THREE.PlaneGeometry(1400,17),roadMat);
+road.rotation.x=-Math.PI/2; road.position.y=.04; road.receiveShadow=true; scene.add(road);
+
+/* mine props */
+ENV=ENVS.mine;
+for(let i=0;i<170;i++){
+  const onRoad=i<26, s=onRoad?.18+Math.random()*.3:.5+Math.random()*2.8;
+  const r=new THREE.Mesh(ROCKG[i%4],Math.random()<.5?M.rock:M.rock2); r.scale.set(s,s*(.6+Math.random()*.5),s);
+  const side=Math.random()<.5?-1:1, z=onRoad?(Math.random()*13-6.5):side*(13+Math.random()*70);
+  r.position.set(-180+Math.random()*360,terrainH(0,z)+s*.25,z); r.rotation.y=Math.random()*6; r.castShadow=r.receiveShadow=true; addMover(r);
+}
+for(let i=0;i<36;i++) for(const z of [-9,9]){
+  const g=new THREE.Group(); CY(.07,.07,1.5,M.orange,g,0,.75,0,0,0,0,8); CY(.075,.075,.18,M.reflect,g,0,1.35,0,0,0,0,8); g.position.set(-180+i*10,0,z); addMover(g);
+}
+const bermGeo=new THREE.CylinderGeometry(1.4,1.4,8.2,14,1,false); bermGeo.rotateZ(Math.PI/2);
+for(let i=0;i<46;i++) for(const z of [-12,12]){
+  const b=new THREE.Mesh(bermGeo,M.rock); b.scale.set(1,.62+Math.random()*.2,1); b.position.set(-180+i*7.85,-.1,z); b.receiveShadow=b.castShadow=true; addMover(b);
+}
+for(let i=0;i<2;i++){
+  const g=new THREE.Group();
+  BX(3,1.2,1.6,M.paint,g,0,.6,0); CY(.12,.14,9,M.steel,g,0,5.5,0);
+  RB(2.4,1.1,.25,.05,M.dark,g,0,9.8,0);
+  for(let k=0;k<4;k++) BX(.5,.4,.08,M.lensW,g,-.8+k*.53,9.8,.14);
+  g.position.set(-60+i*180,0,-17); g.rotation.y=.4; addMover(g);
+}
+
+/* farm props */
+ENV=ENVS.farm;
+const rowTex=canvasTex(256,256,(x,w,h)=>{x.fillStyle="#6b4b31";x.fillRect(0,0,w,h);
+  for(let i=0;i<3000;i++){x.fillStyle=["#5a3e28","#7d5a3c","#4e3622"][(Math.random()*3)|0];x.globalAlpha=Math.random()*.6;x.fillRect(Math.random()*w,Math.random()*h,3,3);}
+  x.globalAlpha=1;for(let r=0;r<4;r++){const y=r*64+18;x.fillStyle="#4f7f2a";x.fillRect(0,y,w,28);x.fillStyle="#6a9a38";for(let k=0;k<40;k++)x.fillRect(Math.random()*w,y+Math.random()*24,6,5);}});
+rowTex.wrapS=rowTex.wrapT=THREE.RepeatWrapping; rowTex.repeat.set(1400/4,3.5);
+const fieldMat=new THREE.MeshStandardMaterial({map:rowTex,roughness:1,color:lin(0xdddddd)});
+for(const s of [-1,1]){const f=new THREE.Mesh(new THREE.PlaneGeometry(1400,14),fieldMat);f.rotation.x=-Math.PI/2;f.position.set(0,.05,s*12.5);f.receiveShadow=true;ENVS.farm.group.add(f);}
+const leafMat=std(0x4f8a2c,.8,0,{flatShading:true}), leafMat2=std(0x6fa23c,.8,0,{flatShading:true}), tasselMat=std(0xd9c26a,.8,0);
+const plantGeo=new THREE.ConeGeometry(.26,.75,6); plantGeo.translate(0,.37,0);
+for(let c=0;c<18;c++) for(const s of [-1,1]){
+  const g=new THREE.Group(); g.position.set(-180+c*20,0,0);
+  const n=40*6, im=new THREE.InstancedMesh(plantGeo,(c+s)%2?leafMat:leafMat2,n); let k=0;
+  for(let row=0;row<6;row++) for(let j=0;j<40;j++){
+    dummy.position.set(j*.5+Math.random()*.1,.05,s*(6.2+row*.75)+(Math.random()-.5)*.1);
+    dummy.rotation.set((Math.random()-.5)*.2,Math.random()*6,(Math.random()-.5)*.2); const sc=.75+Math.random()*.45; dummy.scale.set(sc,sc,sc); dummy.updateMatrix(); im.setMatrixAt(k++,dummy.matrix);
+  }
+  im.castShadow=true; im.receiveShadow=true; g.add(im); addMover(g);
+}
+const postMat=std(0x6b4f35,.9,0), wireMat=std(0x9aa0a6,.4,.8);
+for(let c=0;c<30;c++) for(const s of [-1,1]){
+  const g=new THREE.Group(); g.position.set(-180+c*12,0,s*5.2);
+  for(let p=0;p<4;p++) CY(.06,.07,1.3,postMat,g,p*4,.65,0,0,0,0,7);
+  for(const y of [.55,.95,1.2]) BX(12,.012,.012,wireMat,g,6,y,0);
+  addMover(g);
+}
+const straw=std(0xc9a55a,.95,0), strawEnd=canvasTex(128,128,(x,w)=>{x.fillStyle="#c49c52";x.fillRect(0,0,w,w);x.strokeStyle="#a47f3c";x.lineWidth=3;for(let r=8;r<64;r+=7){x.beginPath();x.arc(w/2,w/2,r,0,Math.PI*2);x.stroke();}});
+const baleMats=[straw,straw,std(0xffffff,.95,0,{map:strawEnd})];
+for(let i=0;i<34;i++){
+  const b=mk(new THREE.CylinderGeometry(.75,.75,1.2,20),baleMats,ENVS.farm.group,0,0,0);
+  ENVS.farm.group.remove(b);
+  const s=Math.random()<.5?-1:1, z=s*(22+Math.random()*50);
+  b.position.set(-180+Math.random()*360,farmH(0,z)+.72,z); b.rotation.set(Math.PI/2,0,Math.random()*3); addMover(b);
+}
+const trunk=std(0x5a4030,.9,0), foliage=std(0x3f6d2a,.85,0,{flatShading:true}), foliage2=std(0x557f33,.85,0,{flatShading:true});
+for(let i=0;i<60;i++){
+  const g=new THREE.Group(); const sc=.8+Math.random()*1.2;
+  CY(.18,.25,2.4,trunk,g,0,1.2,0,0,0,0,7);
+  mk(new THREE.IcosahedronGeometry(1.5,0),i%2?foliage:foliage2,g,0,3.3,0); mk(new THREE.IcosahedronGeometry(1.1,0),foliage2,g,.6,4.3,.3);
+  const s=Math.random()<.5?-1:1, z=s*(30+Math.random()*120);
+  g.scale.setScalar(sc); g.position.set(-180+Math.random()*360,farmH(0,z),z); addMover(g);
+}
+{ // farmstead in the distance
+  const g=new THREE.Group(), red=std(0x8e2f24,.8,0), roof=std(0x5a5f63,.6,.3), wall=std(0xe8e2d2,.8,0);
+  BX(22,10,14,red,g,0,5,0);
+  const rs=new THREE.Shape(); rs.moveTo(-12,0); rs.lineTo(12,0); rs.lineTo(0,7); rs.lineTo(-12,0);
+  const rg=new THREE.ExtrudeGeometry(rs,{depth:15,bevelEnabled:false}); rg.translate(0,0,-7.5); mk(rg,roof,g,0,10,0,0,Math.PI/2,0);
+  BX(6,7,.3,wall,g,0,3.5,7.05);
+  CY(3.6,3.6,20,std(0xb9bec4,.4,.7),g,17,10,0,0,0,0,24); mk(new THREE.SphereGeometry(3.6,24,12,0,Math.PI*2,0,Math.PI/2),std(0xb9bec4,.4,.7),g,17,20,0);
+  g.position.set(90,farmH(90,-150),-150); g.rotation.y=.3; ENVS.farm.group.add(g);
+}
+ENVS.farm.group.visible=false;
+/* ================= Vehicles (shared parts) ================= */
+const PI=Math.PI;
+function makeWheel(V,parent,x,z,w,outSign,R,o={}){
+  const g=new THREE.Group(); g.position.set(x,R,z); parent.add(g);
+  const spin=new THREE.Group(); g.add(spin);
+  const k=R/1.52, h=w/2, sh=Math.min(.2,h*.5);
+  const prof=[[.96*k,-h],[1.24*k,-h],[1.42*k,-h+sh*.3],[1.51*k,-h+sh],[R+.01,0],[1.51*k,h-sh],[1.42*k,h-sh*.3],[1.24*k,h],[.96*k,h]].map(([r,y])=>new THREE.Vector2(r,y));
+  mk(new THREE.LatheGeometry(prof,48),M.rubber,spin,0,0,0,PI/2);
+  const n=o.lugN||24, lugs=new THREE.InstancedMesh(new THREE.BoxGeometry(o.lugT||.3,o.lugH||.08,h*(o.lugL||.85)),M.rubber,n*2);
+  let i2=0; for(let i=0;i<n;i++) for(const s of [-1,1]){
+    const a=i/n*PI*2+(s>0?PI/n:0);
+    dummy.position.set(Math.cos(a)*(R-.01),Math.sin(a)*(R-.01),s*h*.46); dummy.rotation.set(0,0,a+PI/2); dummy.rotateY(s*(o.lugAng||.5)); dummy.updateMatrix(); lugs.setMatrixAt(i2++,dummy.matrix);
+  }
+  lugs.castShadow=true; spin.add(lugs);
+  const rim=o.rimMat||M.rim;
+  CY(.97*k,.97*k,w*.9,rim,spin,0,0,0,PI/2,0,0,32);
+  const fz=outSign*(h*.9);
+  mk(new THREE.TorusGeometry(.82*k,.07*k,8,36),rim,spin,0,0,fz);
+  CY(.46*k,.52*k,.24*k,M.steel,spin,0,0,fz+outSign*.1*k,PI/2,0,0,20);
+  CY(.2*k,.24*k,.12*k,M.chrome,spin,0,0,fz+outSign*.26*k,PI/2,0,0,16);
+  const nb=o.bolts||12, bolts=new THREE.InstancedMesh(new THREE.CylinderGeometry(.045*k,.045*k,.1*k,8),M.chrome,nb);
+  for(let i=0;i<nb;i++){const a=i/nb*PI*2;dummy.position.set(Math.cos(a)*.64*k,Math.sin(a)*.64*k,fz+outSign*.05*k);dummy.rotation.set(PI/2,0,0);dummy.updateMatrix();bolts.setMatrixAt(i,dummy.matrix);}
+  spin.add(bolts);
+  V.wheels.push({spin,R}); if(o.rear) V.rearWheels.push({g,R});
+}
+function buildEnclosure(parent,x,y,z,s){
+  const encl=new THREE.Group(); encl.position.set(x,y,z); encl.scale.setScalar(s); parent.add(encl);
+  RB(1.02,.82,.04,.012,M.enclosure,encl,0,0,-.205);
+  RB(1.02,.04,.45,.012,M.enclosure,encl,0,.39,0); RB(1.02,.04,.45,.012,M.enclosure,encl,0,-.39,0);
+  RB(.04,.82,.45,.012,M.enclosure,encl,.49,0,0); RB(.04,.82,.45,.012,M.enclosure,encl,-.49,0,0);
+  RB(1.1,.06,.52,.02,M.steel,encl,0,-.44,0);
+  for(const px of [-.25,.25]) CY(.035,.035,.05,M.dark,encl,px,-.43,.05,0,0,0,10);
+  const door=new THREE.Group(); door.position.set(-.51,0,.235); encl.add(door);
+  RB(1.02,.82,.04,.012,M.enclosure,door,.51,0,0);
+  decal(textTex(["SMART MONITORING NODE","Solar powered, IP67"],{w:512,h:200,bg:"#1d2227",fg:"#f2b41c",sizes:[46,30]}),.6,.23,door,.51,.14,.022);
+  for(const py of [-.25,.25]) RB(.05,.1,.04,.01,M.dark,door,.96,py,.03);
+  for(const py of [-.3,.3]) CY(.02,.02,.1,M.steel,door,0,py,0,0,0,0,8);
+  encl.traverse(o=>o.userData.comp="mcu");
+  return {encl,door};
+}
+function addCables(V,defs,r){
+  V.packets=Object.entries(defs).map(([k,pts])=>{
+    const m=tube(pts,r,M.cableBlack,V.body);
+    const pk=new THREE.Mesh(new THREE.SphereGeometry(r*3.2,10,10),new THREE.MeshBasicMaterial({color:0xffd24a})); V.body.add(pk);
+    return {k,curve:m.userData.curve,mesh:pk,t:1};
+  });
+}
+function internalMounts(encl){
+  return {
+    charge:{parent:encl,pos:[-.25,.18,-.13],explode:[-2.1,1.7,2.0],eScale:4.2},
+    battery:{parent:encl,pos:[-.26,-.2,-.1],explode:[-2.2,-.75,1.8],eScale:4.2},
+    mcu:{parent:encl,pos:[.15,-.13,-.175],explode:[.75,.25,2.9],eScale:4.2},
+    logger:{parent:encl,pos:[.41,-.27,-.175],explode:[.9,-1.15,2.3],eScale:4.5},
+    radio:{parent:encl,pos:[.39,.0,-.175],explode:[1.75,1.5,1.7],eScale:3}
+  };
+}
+function finishVehicle(V){
+  V.mountObj={};
+  for(const [id,d] of Object.entries(V.mounts)){
+    const m=new THREE.Object3D(); m.position.set(...d.pos); if(d.rot) m.rotation.set(...d.rot); m.scale.setScalar(d.scale||1); d.parent.add(m); V.mountObj[id]=m;
+  }
+  V.spark=new THREE.PointLight(0x88ccff,0,6); V.spark.position.set(...V.sparkPos); V.body.add(V.spark);
+  V.engineGlow=new THREE.PointLight(0xff4020,0,6); V.engineGlow.position.set(...V.glowPos); V.body.add(V.engineGlow);
+  V.headSpot=new THREE.SpotLight(0xfff2d0,0,70,.5,.6,1); V.headSpot.position.set(...V.headPos); V.body.add(V.headSpot); V.body.add(V.headSpot.target); V.headSpot.target.position.set(V.headPos[0]+25,0,0);
+  return V;
+}
+
+/* ================= Mining haul truck ================= */
+function buildTruck(){
+  const V={key:"truck",wheels:[],rearWheels:[]};
+  const root=new THREE.Group(); scene.add(root); const body=new THREE.Group(); root.add(body); V.root=root; V.body=body;
+  makeWheel(V,root,3.4,-2.75,1.1,-1,1.52); makeWheel(V,root,3.4,2.75,1.1,1,1.52);
+  for(const [z,s] of [[-3.2,-1],[-2.05,-1],[2.05,1],[3.2,1]]) makeWheel(V,root,-2.8,z,1.05,s,1.52,{rear:true});
+  CY(.36,.36,4.4,M.steel,root,-2.8,1.52,0,PI/2); mk(new THREE.SphereGeometry(.7,20,14),M.steel,root,-2.8,1.52,0).scale.set(1,1,.75);
+  CY(.26,.26,4.5,M.steel,root,3.4,1.52,0,PI/2);
+  RB(10.8,.72,.34,.05,M.steel,body,-.2,2.45,.86); RB(10.8,.72,.34,.05,M.steel,body,-.2,2.45,-.86);
+  for(const x of [-4.4,-1.8,.8,3]) RB(.3,.5,1.5,.04,M.steel,body,x,2.45,0);
+  for(const z of [-1.9,1.9]){ CY(.2,.2,1.1,M.steel,body,3.4,2.75,z); CY(.12,.12,.9,M.chrome,body,3.4,2.1,z); }
+  RB(.7,1.0,6.6,.1,M.steel,body,5.8,2.3,0);
+  for(const z of [-2.2,2.2]) mk(new THREE.TorusGeometry(.14,.05,8,16),M.chrome,body,6.18,2.1,z,0,PI/2);
+  RB(2.2,2.25,3.1,.12,M.paint,body,4.4,3.78,0);
+  RB(.16,1.8,2.7,.05,M.dark,body,5.52,3.72,0);
+  for(let i=0;i<12;i++) BX(.06,.07,2.5,M.steel,body,5.62,2.95+i*.135,0);
+  for(const s of [-1,1]) for(let i=0;i<7;i++) BX(1.0,.05,.03,M.dark,body,4.1,3.2+i*.13,s*1.56);
+  RB(2.3,.18,6.8,.04,M.steel,body,4.45,4.97,0);
+  [[5.55,-3.35],[5.55,-1.1],[5.55,1.1],[5.55,3.35],[3.35,3.35],[3.35,-3.35]].forEach(([x,z])=>CY(.04,.04,.95,M.paint,body,x,5.52,z,0,0,0,8));
+  rod([5.55,6.0,-3.35],[5.55,6.0,3.35],.045,M.paint,body); rod([5.55,6.0,3.35],[3.35,6.0,3.35],.045,M.paint,body); rod([5.55,6.0,-3.35],[3.35,6.0,-3.35],.045,M.paint,body);
+  rod([5.55,5.55,-3.35],[5.55,5.55,3.35],.03,M.paint,body);
+  for(let i=0;i<7;i++){ const t=i/6; RB(.6,.06,.7,.02,M.steel,body,6.0,2.95+t*1.9,-3.3+t*2.1); }
+  rod([6.3,2.95,-3.6],[6.3,4.85,-1.3],.04,M.paint,body); rod([6.3,3.85,-3.6],[6.3,5.75,-1.3],.04,M.paint,body);
+  RB(1.75,1.95,1.95,.12,M.paint,body,4.35,6.05,-2.2);
+  BX(.03,1.0,1.65,M.glass,body,5.23,6.3,-2.2); BX(1.35,1.0,.03,M.glass,body,4.3,6.3,-1.22); BX(1.35,1.0,.03,M.glass,body,4.3,6.3,-3.18);
+  RB(1.95,.14,2.15,.04,M.dark,body,4.35,7.06,-2.2);
+  BX(.05,.9,.08,M.dark,body,5.25,6.3,-2.2);
+  rod([5.25,6.5,-3.2],[5.6,6.6,-3.7],.03,M.dark,body); RB(.08,.45,.3,.03,M.dark,body,5.62,6.55,-3.75);
+  for(const z of [-2.9,-2.45,2.45,2.9]){ CY(.17,.17,.14,M.dark,body,5.5,4.62,z,0,0,PI/2); CY(.13,.13,.02,M.lensW,body,5.58,4.62,z,0,0,PI/2); }
+  for(const z of [-.95,.95]) RB(.08,.3,.3,.03,M.tail,body,-5.62,2.55,z);
+  RB(1.25,1.35,1.3,.05,M.enclosure,body,4.2,5.72,.5);
+  for(let i=0;i<5;i++) BX(.6,.04,.02,M.dark,body,4.2,5.45+i*.12,1.16);
+  decal(textTex(["DANGER","HIGH VOLTAGE"],{bg:"#f2c200",fg:"#111",sizes:[80,56],border:"#111"}),.5,.25,body,4.2,6.2,1.157);
+  RB(2.5,1.3,1.0,.3,M.paint,body,1.1,2.6,1.6); RB(2.5,1.3,1.0,.3,M.dark,body,1.1,2.6,-1.6);
+  CY(.3,.3,.08,M.chrome,body,1.8,3.28,1.6,0,0,0,16);
+  CY(.16,.16,1.7,M.alu,body,3.5,5.9,-.5); CY(.2,.2,.5,M.steel,body,3.5,5.3,-.5);
+  // dump bed
+  const bed=new THREE.Group(); bed.position.set(-5.6,3.4,0); body.add(bed);
+  RB(8.8,.3,5.8,.05,M.paint,bed,4.4,.15,0);
+  for(const s of [-1,1]){
+    RB(8.8,2.6,.2,.04,M.paint,bed,4.4,1.45,s*2.9);
+    CY(.14,.14,8.8,M.paint,bed,4.4,2.8,s*2.95,0,0,PI/2);
+    for(let i=0;i<6;i++) RB(.16,2.4,.14,.03,M.paint,bed,.7+i*1.5,1.35,s*3.06);
+    RB(8.6,.28,.28,.04,M.steel,bed,4.4,-.1,s*1.25);
+  }
+  RB(.3,4.0,6.0,.05,M.paint,bed,8.75,2.0,0);
+  for(const y of [1.0,2.1,3.2]) RB(.14,.18,5.8,.03,M.paint,bed,8.96,y,0);
+  RB(2.9,.25,6.3,.05,M.paint,bed,10.0,3.95,0);
+  for(const z of [-2.8,-1,1,2.8]) RB(1.2,.9,.12,.03,M.paint,bed,9.45,3.4,z,0,0,-.55);
+  RB(.9,.25,5.8,.05,M.paint,bed,-.25,.4,0,0,0,.4);
+  for(const s of [-1,1]) decal(textTex(["HT-07"],{bg:null,fg:"#1d2227",sizes:[150]}),2.2,1.1,bed,4.4,1.5,s*3.14,s>0?0:PI);
+  const rocks=[];
+  for(let i=0;i<70;i++){
+    const s=.42+Math.random()*.5, fy=i/70;
+    const r=new THREE.Mesh(ROCKG[i%4],i%3?M.ore:M.ore2); r.scale.setScalar(s);
+    const px=.9+Math.random()*7.2, hump=Math.sin(PI*(px/8.8));
+    r.position.set(px,.55+fy*2.7*(.55+.45*hump),(Math.random()*2-1)*2.3);
+    r.rotation.set(Math.random()*3,Math.random()*3,0); r.castShadow=true; r.userData.th=fy; bed.add(r); rocks.push(r);
+  }
+  const hoists=[-1.3,1.3].map(z=>({z,outer:CY(.17,.17,1,M.paint,body,0,0,0,0,0,0,14),rodm:CY(.1,.1,1,M.chrome,body,0,0,0,0,0,0,12)}));
+  const A=new THREE.Vector3(),B=new THREE.Vector3(),D=new THREE.Vector3(),UP=new THREE.Vector3(0,1,0);
+  V.updateAction=a=>{
+    bed.rotation.z=a*.85;
+    hoists.forEach(h=>{
+      A.set(.1,2.8,h.z); B.set(4.3,-.2,h.z).applyEuler(bed.rotation).add(bed.position);
+      D.subVectors(B,A); const L=D.length(); D.normalize(); const oL=Math.min(L,1.35);
+      h.outer.scale.set(1,oL,1); h.outer.position.copy(A).addScaledVector(D,oL/2); h.outer.quaternion.setFromUnitVectors(UP,D);
+      h.rodm.scale.set(1,L,1); h.rodm.position.copy(A).addScaledVector(D,L/2); h.rodm.quaternion.setFromUnitVectors(UP,D);
+    });
+  };
+  V.setLoad=(p)=>rocks.forEach(r=>r.visible=r.userData.th<p);
+  tube([[4.2,5.55,1.15],[4.25,5.55,1.75],[4.25,4.9,1.75],[4.25,3.3,1.75],[3.7,2.95,1.45],[1.0,2.95,.95],[-2.2,2.9,.95],[-2.8,2.0,.55]],.1,M.cable,body,.1);
+  CY(.045,.05,1.25,M.steel,body,5.35,5.68,3.05,0,0,0,10); RB(.3,.05,.3,.02,M.steel,body,5.35,6.3,3.05);
+  const {encl,door}=buildEnclosure(body,4.45,5.46,2.3,1); V.encl=encl; V.door=door;
+  tube([[4.2,5.9,2.3],[4.2,6.5,2.55],[4.0,7.25,2.55]],.03,M.cableBlack,body);
+  addCables(V,{
+    vib:[[-2.8,2.3,1.3],[-2.5,2.95,1.1],[2.6,3.0,1.1],[3.15,3.4,1.6],[3.2,5.1,1.95],[3.6,5.3,2.3],[3.94,5.3,2.3]],
+    temp:[[5.0,3.9,1.95],[4.8,4.3,2.0],[4.6,4.85,2.15],[4.5,5.05,2.3]],
+    cur:[[4.55,4.25,1.85],[4.75,4.55,2.0],[4.75,4.95,2.2],[4.7,5.05,2.3]]
+  },.028);
+  V.mounts=Object.assign({
+    solar:{parent:bed,pos:[10.0,4.075,0],explode:[0,2.6,0]},
+    vib:{parent:root,pos:[-2.8,1.88,1.3],scale:3.2,explode:[0,2.4,3.6],eScale:1.6},
+    temp:{parent:body,pos:[5.0,3.9,1.56],rot:[PI/2,0,0],scale:3,explode:[1.6,-.5,2.6],eScale:1.6},
+    cur:{parent:body,pos:[4.25,4.25,1.75],scale:3,explode:[-1.2,-1.4,2.8],eScale:1.6},
+    beacon:{parent:body,pos:[5.35,6.33,3.05],scale:1.7,explode:[1.3,2.4,.9]}
+  },internalMounts(encl));
+  Object.assign(V,{
+    name:"Mining haul truck", env:"mine", sparkPos:[4.6,4.25,2.0], glowPos:[4.4,3.8,2.2], headPos:[5.6,4.6,0],
+    tagTf:{temp:"translate(-10%,40%)",cur:"translate(-100%,-150%)",node:"translate(-20%,-150%)"}, exhaust:[3.5,6.8,-.5], dust:{x:-2.8,z:2.6,spread:1,y:.5}, enclTagY:.7, rMin:9,
+    orbit0:{theta:.95,phi:1.18,r:26,tx:.8,ty:4.2,tz:.4}, explodeView:{theta:1.05,phi:1.22,r:19,tx:2.2,ty:5.0,tz:1.6},
+    actionLabel:"Dump the load", actionStart:"Hoist raising the bed to dump the load.", actionMid:"Load dumped. Hoist current spike seen by the current sensor.", actionEnd:"Bed lowered. Use the payload slider to reload.",
+    sim:{vibSpd:.05,curBase:170,curLoad:400,curSpd:6,curNoise:25,curBump:38,spike:520,fault:280,faultVar:260,actionStops:true},
+    ctl:{speed:{max:60,value:30},payload:{label:"Payload in the bed",value:80},limCur:{min:400,max:2000,step:10,value:950},rough:{h:"0 is a graded haul road, 100 is a rocky pit floor.",value:30}},
+    curLabel:"Current, drive and hoist cable", managerTitle:"Fleet manager's view",
+    lede:"A self-powered monitor on a mining haul truck. Click any part, or any box in the flowchart, to see what it does.",
+    scen:[
+      ["Haul road",{speed:45,rough:12,payload:90,fBearing:0,fCool:0,fElec:0,ambient:28,cloud:10}],
+      ["Rocky pit floor",{speed:18,rough:92,payload:100,fBearing:0,fCool:0,fElec:0}],
+      ["Bearing failing",{speed:30,rough:35,fBearing:65,fCool:0,fElec:0}],
+      ["Hot afternoon, weak cooling",{ambient:44,fCool:40,hour:14,fBearing:0,fElec:0}],
+      ["Electrical fault",{fElec:70,fBearing:0,fCool:0}],
+      ["Night shift, small battery",{hour:19,cloud:90,timeScale:"3600",capAh:2,panelW:10}]
+    ],
+    txt:{
+      solar:"Every cycle starts with energy from the sun. A rugged panel on the dump-bed canopy harvests sunlight, so the monitor never drains the truck's own electrics and never needs a battery swap in the pit.",
+      solarMount:"Mounted on the canopy, above most of the dust",
+      vib:"An industrial accelerometer is bolted to the rear axle bearing housing. Worn bearings, loose mounts and unbalanced parts all show up as rising vibration long before they fail.",
+      temp:"A stainless probe threaded into the engine block tracks operating temperature. Overheating from a blocked radiator, low coolant or overloading is caught before it damages the engine.",
+      cur:"A split-core clamp closes around the main drive cable without cutting or rewiring it. Current shows how hard the motors and hoist are working and exposes electrical faults such as shorts or failing insulation.",
+      curMax:"Measures up to 2000 A",
+      filter:"Haul trucks bounce over rough pit roads and every bump jolts the sensors. The microcontroller averages the last few readings, so a single jolt is ignored while a problem that lasts still comes through. This is what prevents costly false alarms.",
+      radio:"When a limit is crossed the radio immediately sends an alert to the fleet manager's dashboard, saying which truck, which sensor and how far over the limit it is.",
+      radioRange:"LoRaWAN for long range across the mine",
+      beacon:"At the same moment an amber beacon on the truck starts flashing, so the operator and nearby crew know to stop and check before a small fault becomes a catastrophic failure.",
+      noun:"truck"
+    }
+  });
+  return finishVehicle(V);
+}
+
+/* ================= Farm tractor ================= */
+function buildTractor(){
+  const V={key:"tractor",wheels:[],rearWheels:[]};
+  const root=new THREE.Group(); scene.add(root); const body=new THREE.Group(); root.add(body); V.root=root; V.body=body;
+  const green=phys(0x3f7c38,{roughness:.36,metalness:.15,clearcoat:.7,clearcoatRoughness:.3});
+  const cabGlass=phys(0x9fb8c8,{transparent:true,opacity:.28,roughness:.05,metalness:0,clearcoat:1,depthWrite:false});
+  const rimLight=std(0xd4d7d9,.4,.45), impl=phys(0xb73a2c,{roughness:.45,metalness:.2,clearcoat:.4});
+  for(const s of [-1,1]) makeWheel(V,root,-1.1,s*1.1,.62,s,1.0,{rear:true,lugN:20,lugT:.14,lugH:.1,lugL:.95,lugAng:.7,rimMat:rimLight,bolts:10});
+  for(const s of [-1,1]) makeWheel(V,root,1.75,s*.93,.34,s,.6,{lugN:16,lugT:.09,lugH:.06,lugL:.95,lugAng:.6,rimMat:rimLight,bolts:6});
+  CY(.14,.14,1.55,M.steel,root,-1.1,1.0,0,PI/2); mk(new THREE.SphereGeometry(.32,18,12),M.steel,root,-1.1,1.0,0).scale.set(1.1,1,.9);
+  for(const s of [-1,1]) CY(.17,.12,.42,M.steel,root,-1.1,1.0,s*.55,PI/2);
+  CY(.08,.08,1.55,M.steel,root,1.75,.6,0,PI/2); RB(.34,.25,.45,.04,M.steel,root,1.75,.72,0);
+  // engine, transmission, hood
+  RB(2.5,.46,.7,.06,M.dark,body,.95,.8,0);
+  RB(1.3,.62,.95,.08,M.steel,body,-.85,1.05,0);
+  RB(2.1,.86,.96,.22,green,body,1.25,1.43,0);
+  for(const s of [-1,1]) for(let i=0;i<5;i++) BX(.7,.04,.02,M.dark,body,1.55,1.18+i*.1,s*.485);
+  for(const s of [-1,1]) decal(textTex(["TR-03"],{bg:null,fg:"#f4f4f0",sizes:[140]}),.55,.27,body,.75,1.55,s*.487,s>0?0:PI);
+  RB(.14,.72,.82,.05,M.dark,body,2.33,1.36,0);
+  for(let i=0;i<7;i++) BX(.04,.05,.72,M.steel,body,2.41,1.1+i*.085,0);
+  for(const s of [-1,1]){ CY(.085,.085,.07,M.dark,body,2.3,1.74,s*.3,0,0,PI/2); CY(.07,.07,.01,M.lensW,body,2.345,1.74,s*.3,0,0,PI/2); }
+  RB(.5,.36,.92,.05,M.dark,body,2.58,.78,0);
+  for(let i=0;i<5;i++) RB(.08,.3,.86,.02,M.dark,body,2.38+i*.1,.78,0);
+  CY(.05,.05,1.3,M.dark,body,1.85,2.5,.3,0,0,0,10); CY(.1,.1,.42,M.alu,body,1.85,2.05,.3,0,0,0,14); CY(.065,.065,.06,M.dark,body,1.85,3.17,.3,0,0,0,10);
+  CY(.08,.08,.5,M.dark,body,1.85,2.1,-.3,0,0,0,12); CY(.12,.12,.12,M.dark,body,1.85,2.4,-.3,0,0,0,12);
+  // cab
+  RB(1.6,.12,1.35,.03,M.steel,body,-1.0,1.62,0);
+  for(const [x,z] of [[-1.72,-.62],[-1.72,.62],[-.28,-.62],[-.28,.62]]) CY(.045,.045,1.56,M.dark,body,x,2.45,z,0,0,0,10);
+  for(const m of [BX(.02,1.35,1.2,cabGlass,body,-.27,2.42,0),BX(.02,1.35,1.2,cabGlass,body,-1.73,2.42,0),BX(1.4,1.35,.02,cabGlass,body,-1.0,2.42,.62),BX(1.4,1.35,.02,cabGlass,body,-1.0,2.42,-.62)]) m.castShadow=false;
+  RB(1.78,.14,1.5,.06,M.white,body,-1.0,3.3,0); RB(1.62,.06,1.36,.03,green,body,-1.0,3.39,0);
+  RB(.45,.12,.45,.04,M.dark,body,-1.2,2.0,0); RB(.1,.52,.45,.04,M.dark,body,-1.43,2.3,0);
+  rod([-.45,1.7,0],[-.72,2.22,0],.03,M.dark,body); mk(new THREE.TorusGeometry(.17,.022,6,22),M.dark,body,-.74,2.25,0,0,PI/2+.5,0);
+  // rear fenders
+  const fs=new THREE.Shape(); fs.absarc(0,0,1.17,.12,PI-.12,false); fs.absarc(0,0,1.1,PI-.12,.12,true);
+  const fg=new THREE.ExtrudeGeometry(fs,{depth:.74,bevelEnabled:false,curveSegments:24}); fg.translate(0,0,-.37);
+  for(const s of [-1,1]){ mk(fg,green,body,-1.1,1.0,s*1.1); RB(.78,.05,.74,.02,green,body,-1.1,2.17,s*1.1); }
+  RB(.6,.45,.36,.12,green,body,-.05,1.2,-.62);
+  RB(.38,.3,.28,.04,M.dark,body,-.32,1.3,.66);
+  for(let i=0;i<2;i++) RB(.34,.04,.24,.01,M.steel,body,.05,.72+i*.42,-.74);
+  rod([.2,.7,-.86],[.2,1.6,-.7],.02,M.dark,body);
+  // alternator cable (current sensor clamps here)
+  tube([[1.9,.95,.42],[1.3,.88,.5],[.5,.9,.58],[.06,1.0,.62],[.06,1.45,.62],[-.15,1.5,.64],[-.3,1.45,.66]],.045,M.red,body,.1);
+  // three-point hitch and cultivator
+  const imp=new THREE.Group(); imp.position.set(-1.5,.82,0); body.add(imp);
+  for(const s of [-1,1]) rod([0,0,s*.35],[-.95,-.25,s*.55],.045,M.dark,imp);
+  rod([-.05,.62,0],[-.95,.35,0],.04,M.dark,imp);
+  RB(.2,.2,2.5,.03,impl,imp,-1.0,-.2,0);
+  RB(.14,.5,.14,.02,impl,imp,-1.0,.1,0);
+  for(const s of [-1,1]) RB(1.25,.12,.12,.02,impl,imp,-1.6,-.25,s*1.0);
+  RB(.14,.14,2.3,.02,impl,imp,-2.2,-.25,0);
+  const tineMat=M.steel;
+  for(const bx of [-1.05,-2.25]) for(let i=0;i<(bx<-2?7:6);i++){
+    const z=bx<-2?-1.05+i*.35:-.875+i*.35;
+    tube([[bx,-.26,z],[bx-.04,-.55,z],[bx+.06,-.85,z],[bx+.2,-.94,z]],.024,tineMat,imp,.4);
+    BX(.14,.02,.08,M.chrome,imp,bx+.22,-.95,z,0,0,.35);
+  }
+  V.updateAction=a=>{ imp.rotation.z=-.42*a; };
+  V.setLoad=p=>{ imp.position.y=.82-.07*p; };
+  V.imp=imp;
+  // enclosure on the right fender
+  const {encl,door}=buildEnclosure(body,-1.1,2.47,1.1,.58); V.encl=encl; V.door=door;
+  tube([[-1.1,2.73,1.1],[-1.25,3.0,.85],[-1.25,3.28,.66]],.02,M.cableBlack,body);
+  addCables(V,{
+    vib:[[-1.1,1.42,.5],[-1.35,1.62,.56],[-1.62,1.95,.85],[-1.45,2.2,1.05],[-1.25,2.23,1.1]],
+    temp:[[1.0,.8,.66],[.6,.95,.72],[-.2,1.6,.92],[-.8,2.2,1.1],[-.95,2.23,1.1]],
+    cur:[[.3,1.25,.7],[.12,1.6,.9],[-.6,2.12,1.1],[-.9,2.23,1.1]]
+  },.018);
+  V.mounts=Object.assign({
+    solar:{parent:body,pos:[-1.0,3.425,0],scale:.27,explode:[0,1.3,0]},
+    vib:{parent:root,pos:[-1.1,1.17,.48],scale:2.1,explode:[-1.4,-.2,2.3],eScale:1.8},
+    temp:{parent:body,pos:[1.0,.8,.36],rot:[PI/2,0,0],scale:2,explode:[1.5,.7,1.5],eScale:1.8},
+    cur:{parent:body,pos:[.06,1.24,.62],scale:1.6,explode:[.5,-.4,2.1],eScale:2.2},
+    beacon:{parent:body,pos:[-.4,3.42,-.52],scale:1.3,explode:[.4,1.1,-.2]}
+  },internalMounts(encl));
+  Object.assign(V,{
+    name:"Farm tractor", env:"farm", sparkPos:[.06,1.24,.8], glowPos:[1.2,1.1,.9], headPos:[2.4,1.74,0],
+    tagTf:{solar:"translate(-105%,-140%)",beacon:"translate(5%,-160%)",vib:"translate(-105%,20%)",cur:"translate(0%,-160%)",temp:"translate(-10%,45%)",node:"translate(-50%,-170%)"}, exhaust:[1.85,3.25,.3], dust:{x:-1.1,z:1.1,spread:.4,y:.25}, soil:{x:-3.75,z:1.0}, enclTagY:.45, rMin:5,
+    orbit0:{theta:.95,phi:1.2,r:12.5,tx:-.3,ty:1.7,tz:.2}, explodeView:{theta:1.05,phi:1.2,r:10,tx:-.5,ty:2.3,tz:.9},
+    actionLabel:"Lift the implement", actionStart:"Hydraulics lifting the cultivator out of the ground.", actionMid:"Implement raised at the headland. Hydraulic pump load seen by the current sensor.", actionEnd:"Cultivator lowered back into the soil.",
+    sim:{vibSpd:.09,curBase:28,curLoad:45,curSpd:1.2,curNoise:4,curBump:6,spike:85,fault:55,faultVar:45,actionStops:false},
+    ctl:{speed:{max:40,value:12},payload:{label:"Implement working depth",value:70},limCur:{min:40,max:400,step:5,value:140},rough:{h:"0 is a smooth farm road, 100 is freshly ploughed, rutted ground.",value:40}},
+    curLabel:"Current, alternator and hydraulic pump cable", managerTitle:"Farm manager's view",
+    lede:"A self-powered monitor on a farm tractor. Click any part, or any box in the flowchart, to see what it does.",
+    scen:[
+      ["Farm road",{speed:28,rough:10,payload:0,fBearing:0,fCool:0,fElec:0,ambient:26,cloud:10}],
+      ["Ploughing rough ground",{speed:8,rough:90,payload:100,fBearing:0,fCool:0,fElec:0}],
+      ["Bearing failing",{speed:12,rough:35,fBearing:65,fCool:0,fElec:0}],
+      ["Hot afternoon, clogged radiator",{ambient:42,fCool:45,hour:14,payload:90,fBearing:0,fElec:0}],
+      ["Alternator fault",{fElec:70,fBearing:0,fCool:0}],
+      ["Late harvest, small battery",{hour:19,cloud:90,timeScale:"3600",capAh:2,panelW:10}]
+    ],
+    txt:{
+      solar:"Every cycle starts with energy from the sun. A rugged panel on the cab roof harvests sunlight, so the monitor never drains the tractor's own battery and keeps working in remote fields far from any power point.",
+      solarMount:"Mounted on the cab roof, clear of mud and crop dust",
+      vib:"An industrial accelerometer is bolted to the rear axle housing, beside the wheel bearing. Worn bearings, loose implements and unbalanced parts all show up as rising vibration long before they fail.",
+      temp:"A stainless probe in the engine block tracks operating temperature. Heavy ploughing, a radiator clogged with chaff or low coolant is caught before it damages the engine.",
+      cur:"A split-core clamp closes around the main alternator and battery cable without cutting it. Current shows how hard the charging system and hydraulics are working and exposes faults such as a failing alternator or damaged wiring.",
+      curMax:"Measures up to 300 A",
+      filter:"Tractors bounce across ploughed, rutted ground and every jolt shakes the sensors. The microcontroller averages the last few readings, so a single bump is ignored while a problem that lasts still comes through. This is what prevents costly false alarms.",
+      radio:"When a limit is crossed the radio immediately sends an alert to the farm manager's phone or dashboard, saying which tractor, which sensor and how far over the limit it is.",
+      radioRange:"LoRaWAN covers large farms, up to about 10 km",
+      beacon:"At the same moment an amber beacon on the cab roof starts flashing, so the driver and nearby farm workers know to stop and check before a small fault becomes a costly breakdown in the middle of the season.",
+      noun:"tractor"
+    }
+  });
+  return finishVehicle(V);
+}
+const VEHICLES={truck:buildTruck(),tractor:buildTractor()};
+let VEH=VEHICLES.truck;
+/* ================= Components (click to explain) ================= */
+function cellTex(){return canvasTex(512,1024,(x,w,h)=>{
+  x.fillStyle="#c5ccd3";x.fillRect(0,0,w,h);
+  const cols=6,rows=12,cw=(w-16)/cols,ch=(h-16)/rows;
+  for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){const px=8+i*cw,py=8+j*ch;const g=x.createLinearGradient(px,py,px+cw,py+ch);g.addColorStop(0,"#1f3f78");g.addColorStop(.5,"#122a58");g.addColorStop(1,"#1a3569");
+    x.fillStyle=g;x.fillRect(px+2,py+2,cw-4,ch-4);x.fillStyle="rgba(210,220,235,.55)";x.fillRect(px+cw*.33,py+2,1.5,ch-4);x.fillRect(px+cw*.66,py+2,1.5,ch-4);
+    x.fillStyle="#c5ccd3";[[px+2,py+2],[px+cw-8,py+2],[px+2,py+ch-8],[px+cw-8,py+ch-8]].forEach(([a,b])=>x.fillRect(a,b,6,6));}
+});}
+function buildSolar(){
+  const g=new THREE.Group();
+  RB(2.5,.07,5.6,.02,M.alu,g,0,.035,0);
+  const top=new THREE.Mesh(new THREE.PlaneGeometry(2.4,5.5),phys(0xffffff,{map:cellTex(),roughness:.15,metalness:.35,clearcoat:1,clearcoatRoughness:.05}));
+  top.rotation.x=-PI/2; top.position.y=.073; top.receiveShadow=true; g.add(top);
+  RB(.4,.1,.28,.02,M.darkPlastic,g,0,-.05,1.9);
+  for(const x of [-.9,.9]) for(const z of [-2,0,2]) RB(.14,.12,.34,.02,M.steel,g,x,-.06,z);
+  tube([[0,-.08,2.05],[0,-.16,2.4],[.2,-.2,2.8]],.025,M.cableBlack,g);
+  return g;
+}
+function buildCharge(){
+  const g=new THREE.Group();
+  RB(.34,.23,.07,.012,M.darkPlastic,g,0,0,.035);
+  BX(.34,.23,.012,M.alu,g,0,0,-.006);
+  for(let i=0;i<9;i++) BX(.33,.008,.045,M.alu,g,0,-.1+i*.025,-.03);
+  decal(textTex(["14.2 V","1.2 A  CHG"],{w:256,h:128,bg:"#8fb2a1",fg:"#10231a",sizes:[48,30],font:"monospace"}),.13,.065,g,-.04,.04,.0715);
+  decal(textTex(["MPPT"],{w:256,h:64,bg:null,fg:"#f2b41c",sizes:[46]}),.12,.03,g,.1,.075,.0715);
+  for(let i=0;i<3;i++) CY(.01,.01,.01,M.alu,g,.06+i*.035,.02,.072,PI/2,0,0,10);
+  BX(.28,.04,.03,M.terminal,g,0,-.09,.08);
+  for(let i=0;i<6;i++) CY(.008,.008,.012,M.alu,g,-.11+i*.044,-.09,.097,PI/2,0,0,8);
+  return g;
+}
+function buildBattery(){
+  const g=new THREE.Group();
+  RB(.36,.2,.16,.015,M.battBlue,g,0,0,0);
+  RB(.37,.03,.17,.01,M.darkPlastic,g,0,.11,0);
+  decal(textTex(["LiFePO4","12.8 V   7 Ah"],{w:512,h:256,bg:"#2c4c77",fg:"#fff",sizes:[92,56]}),.28,.13,g,0,-.01,.0805);
+  CY(.018,.018,.035,M.red,g,-.12,.14,0,0,0,0,12); CY(.018,.018,.035,M.darkPlastic,g,.12,.14,0,0,0,0,12);
+  CY(.009,.009,.02,M.alu,g,-.12,.165,0,0,0,0,8); CY(.009,.009,.02,M.alu,g,.12,.165,0,0,0,0,8);
+  tube([[-.07,.125,0],[-.05,.165,0],[.05,.165,0],[.07,.125,0]],.007,M.dark,g);
+  return g;
+}
+function buildMCU(){
+  const g=new THREE.Group();
+  BX(.3,.2,.016,M.pcb,g,0,0,0);
+  decal(canvasTex(512,340,(x,w,h)=>{x.strokeStyle="rgba(190,230,170,.45)";x.lineWidth=3;for(let i=0;i<40;i++){x.beginPath();let px=Math.random()*w,py=Math.random()*h;x.moveTo(px,py);px+= (Math.random()-.5)*200;x.lineTo(px,py);py+=(Math.random()-.5)*120;x.lineTo(px,py);x.stroke();}}),.29,.19,g,0,0,.0085);
+  BX(.055,.055,.008,M.chip,g,-.04,.02,.012);
+  decal(textTex(["EDGE MCU"],{w:256,h:128,bg:null,fg:"#bbb",sizes:[44]}),.045,.02,g,-.04,.02,.0165);
+  BX(.08,.055,.012,M.alu,g,.075,.05,.014);
+  for(const [x,y] of [[-.1,-.05],[.02,-.06],[.1,-.03],[-.11,.06]]) BX(.022,.014,.005,M.chip,g,x,y,.011);
+  for(const [x,y] of [[.0,-.03],[.12,-.07],[-.06,-.07]]) CY(.009,.009,.022,M.alu,g,x,y,.019,PI/2,0,0,12);
+  BX(.24,.018,.012,M.chip,g,0,-.088,.014);
+  const pins=new THREE.InstancedMesh(new THREE.BoxGeometry(.004,.004,.02),M.gold,20);
+  for(let i=0;i<20;i++){dummy.position.set(-.114+i*.012,-.088,.026);dummy.rotation.set(0,0,0);dummy.updateMatrix();pins.setMatrixAt(i,dummy.matrix);} g.add(pins);
+  BX(.032,.02,.012,M.alu,g,-.14,-.02,.014);
+  const led=BX(.008,.005,.004,std(0x114411,.3,0,{emissive:0x33ff77,emissiveIntensity:2}),g,.12,-.005,.011);
+  g.userData.led=led;
+  return g;
+}
+function buildLogger(){
+  const g=new THREE.Group();
+  BX(.12,.08,.012,M.pcbBlue,g,0,0,0);
+  BX(.05,.045,.008,M.alu,g,.015,0,.01); BX(.036,.03,.004,M.chip,g,.015,-.03,.012);
+  BX(.025,.02,.006,M.chip,g,-.035,.015,.009);
+  decal(textTex(["DATA LOG"],{w:256,h:64,bg:null,fg:"#dde",sizes:[40]}),.05,.013,g,-.03,-.025,.0065);
+  return g;
+}
+function buildRadio(){
+  const g=new THREE.Group();
+  BX(.14,.1,.012,M.pcbBlack,g,0,0,0);
+  BX(.075,.06,.012,M.alu,g,-.02,0,.012);
+  decal(textTex(["LoRa / 4G"],{w:256,h:64,bg:null,fg:"#333",sizes:[40]}),.06,.015,g,-.02,0,.0185);
+  CY(.009,.009,.03,M.gold,g,.05,.065,.012,0,0,0,10);
+  tube([[.05,.08,.012],[.05,.22,.08],[.05,.37,.17],[.05,.43,.17]],.005,M.cableBlack,g);
+  CY(.03,.035,.05,M.dark,g,.05,.45,.17,0,0,0,14);
+  CY(.012,.006,.55,M.dark,g,.05,.75,.17,0,0,0,10);
+  return g;
+}
+function buildVib(){
+  const g=new THREE.Group();
+  CY(.036,.036,.02,M.steel,g,0,.01,0,0,0,0,6);
+  CY(.028,.028,.075,M.chrome,g,0,.0575,0,0,0,0,28);
+  CY(.0292,.0292,.005,M.dark,g,0,.075,0,0,0,0,28);
+  CY(.017,.017,.03,M.steel,g,0,.108,0,0,0,0,14);
+  CY(.02,.02,.02,M.chrome,g,0,.13,0,0,0,0,8);
+  tube([[0,.14,0],[0,.18,0],[.05,.21,0],[.14,.22,0]],.007,M.cableBlack,g);
+  return g;
+}
+function buildTemp(){
+  const g=new THREE.Group();
+  CY(.042,.042,.055,M.alu,g,0,.1,0,0,0,0,22); CY(.044,.044,.012,M.steel,g,0,.132,0,0,0,0,22);
+  CY(.012,.012,.04,M.steel,g,0,.055,0,0,0,0,10);
+  CY(.024,.024,.018,M.chrome,g,0,.03,0,0,0,0,6);
+  CY(.014,.014,.02,M.steel,g,0,.012,0,0,0,0,12);
+  CY(.006,.006,.12,M.chrome,g,0,-.06,0,0,0,0,10);
+  CY(.011,.011,.022,M.dark,g,.05,.1,0,0,0,PI/2,10);
+  tube([[.06,.1,0],[.12,.09,0],[.18,.02,0]],.006,M.cableBlack,g);
+  return g;
+}
+function buildCT(){
+  const g=new THREE.Group(), ct=std(0x1b1d20,.5,0);
+  RB(.2,.065,.05,.008,ct,g,0,0,.075); RB(.2,.065,.05,.008,ct,g,0,0,-.075);
+  RB(.05,.065,.1,.008,ct,g,.075,0,0); RB(.05,.065,.1,.008,ct,g,-.075,0,0);
+  RB(.03,.045,.022,.005,M.orange,g,.1,0,.08);
+  CY(.008,.008,.07,M.alu,g,-.1,0,.1,0,0,0,8);
+  decal(textTex(["HALL CT","CLAMP-ON"],{w:256,h:128,bg:null,fg:"#ddd",sizes:[48,30]}),.1,.045,g,0,0,.1005);
+  tube([[.1,.0,-.05],[.2,-.03,-.08],[.26,-.12,-.08]],.006,M.red,g);
+  tube([[.1,.01,-.03],[.21,-.01,-.05],[.28,-.1,-.05]],.006,M.cableBlack,g);
+  return g;
+}
+function buildBeacon(){
+  const g=new THREE.Group();
+  CY(.09,.1,.05,M.dark,g,0,.025,0,0,0,0,24); CY(.085,.085,.015,M.alu,g,0,.058,0,0,0,0,24);
+  const lensMat=phys(0xffa31a,{transparent:true,opacity:.62,roughness:.08,emissive:0xff8800,emissiveIntensity:0});
+  CY(.07,.075,.12,lensMat,g,0,.125,0,0,0,0,28);
+  mk(new THREE.SphereGeometry(.07,28,12,0,PI*2,0,PI/2),lensMat,g,0,.185,0);
+  const rotor=new THREE.Group(); rotor.position.y=.12; g.add(rotor);
+  BX(.012,.08,.06,M.chrome,rotor,0,0,0); BX(.02,.04,.012,std(0x552200,.3,0,{emissive:0xffaa00,emissiveIntensity:0}),rotor,.012,0,0);
+  const light=new THREE.PointLight(0xffa000,0,9,1.5); light.position.y=.13; g.add(light);
+  Object.assign(g.userData,{rotor,light,lensMat,ledMat:rotor.children[1].material});
+  return g;
+}
+
+const COMPS=[
+  {id:"solar",name:"Solar panel",build:buildSolar,focusR:[1.05,0,0]},
+  {id:"charge",name:"MPPT charge controller",build:buildCharge},
+  {id:"battery",name:"LiFePO4 battery",build:buildBattery},
+  {id:"mcu",name:"Microcontroller",build:buildMCU},
+  {id:"logger",name:"Data logger",build:buildLogger},
+  {id:"radio",name:"LoRa / 4G radio",build:buildRadio},
+  {id:"vib",name:"Vibration sensor",build:buildVib},
+  {id:"temp",name:"Temperature sensor",build:buildTemp},
+  {id:"cur",name:"Current sensor",build:buildCT,focusR:[.8,0,0]},
+  {id:"beacon",name:"Warning beacon",build:buildBeacon}
+];
+const CMAP={};
+const _bs=new THREE.Box3(), _sph=new THREE.Sphere();
+COMPS.forEach(c=>{
+  c.group=c.build(); scene.add(c.group);
+  c.group.traverse(o=>{o.userData.comp=c.id; if(o.isMesh){o.castShadow=true;}});
+  _bs.setFromObject(c.group); _bs.getBoundingSphere(_sph);
+  c.center=_sph.center.clone(); c.radius=_sph.radius;
+  c.explodeV=new THREE.Vector3(); c.eScale=1;
+  c.focusQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(...(c.focusR||[.2,0,0])));
+  c.e=0; c.f=0; c.spin=0; c.tilt=0;
+  const lg=new THREE.BufferGeometry(); lg.setAttribute("position",new THREE.BufferAttribute(new Float32Array(6),3));
+  c.line=new THREE.Line(lg,new THREE.LineBasicMaterial({color:0xf2b41c,transparent:true,opacity:.9,depthTest:false})); c.line.frustumCulled=false; c.line.renderOrder=5; scene.add(c.line);
+  CMAP[c.id]=c;
+});
+function mountComps(V){
+  COMPS.forEach(c=>{const d=V.mounts[c.id]; c.mount=V.mountObj[c.id]; c.parent=d.parent; c.explodeV.set(...d.explode); c.eScale=d.eScale||1;});
+}
+mountComps(VEH);
+
+// sensor status halos and data packets
+const ringTex=canvasTex(128,128,(x,w)=>{x.strokeStyle="#fff";x.lineWidth=9;x.beginPath();x.arc(w/2,w/2,w/2-8,0,PI*2);x.stroke();});
+const HALOS=["vib","temp","cur"].map(k=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:ringTex,color:0x33dd77,transparent:true,depthWrite:false,depthTest:false}));s.renderOrder=4;scene.add(s);return {k,s};});
+/* ================= Walkthrough stops ================= */
+const f1=(v,d=1)=>v==null?"--":v.toFixed(d);
+const autonomy=()=>{const c=CHEM[P.chem];return (c.v*P.capAh*c.dod)/(P.nodeW*24);};
+const STOPS=[
+  {step:"start",comp:"solar",chip:"START: power",title:"Solar panel",
+   text:()=>VEH.txt.solar,
+   specs:()=>[`${P.panelW} W monocrystalline, tempered glass`,VEH.txt.solarMount,"Rubber anti-vibration mounts","Around 4 to 5 Wh per rated watt on a sunny day"],
+   live:()=>`Producing ${f1(sim.pv)} W right now`},
+  {step:"start",comp:"charge",chip:"START: power",title:"MPPT charge controller",
+   text:"The charge controller constantly finds the panel's best operating point, collecting up to about 30% more energy than a basic controller when light changes, and charges the battery without overcharging it.",
+   specs:()=>["Maximum power point tracking, about 94% efficient","Charging profile set for LiFePO4","Low-voltage disconnect protects the battery","Reports charge data to the microcontroller"],
+   live:()=>`Charging at ${f1(sim.pv*.94/13.3,2)} A`},
+  {step:"start",comp:"battery",chip:"START: power",title:"LiFePO4 battery",
+   text:"The battery stores the day's energy so monitoring carries on overnight and through cloudy weather. Lithium iron phosphate copes with heat, vibration and deep cycling far better than lead-acid.",
+   specs:()=>[`${CHEM[P.chem].v} V, ${P.capAh} Ah (${Math.round(CHEM[P.chem].v*P.capAh)} Wh)`,"2000 or more full charge cycles","Built-in battery management system",`Runs the node about ${f1(autonomy())} days with no sun`],
+   live:()=>`${Math.round(sim.soc*100)}% charged`},
+  {step:"init",comp:"mcu",chip:"Initialise MCU and sensors",title:"Microcontroller",
+   text:"When power arrives the microcontroller boots, checks that each sensor responds and loads its normal limits. It is the brain of the system: all processing happens on the machine itself, so only useful results are sent.",
+   specs:()=>["Low-power 32-bit MCU, such as ESP32 or STM32","Sleeps between readings to save energy","Watchdog timer restarts it if it ever freezes","Limits can be updated remotely"],
+   live:()=>!sim.on?"Off, waiting for solar charge":sim.boot>0?"Booting and checking sensors":"Running the reading loop"},
+  {step:"read",comp:"vib",chip:"Read temperature, vibration, current",title:"Vibration sensor",
+   text:()=>VEH.txt.vib,
+   specs:()=>["Triaxial MEMS accelerometer","Reports vibration velocity in mm/s","Stainless steel, sealed to IP67","Stud mounted for a solid signal"],
+   live:()=>sim.last?`Raw ${f1(sim.last.raw.vib)} mm/s, filtered ${f1(sim.last.filt.vib)} mm/s`:"Waiting for first reading", alarm:()=>sim.last&&sim.last.over.includes("vib")},
+  {step:"read",comp:"temp",chip:"Read temperature, vibration, current",title:"Temperature sensor",
+   text:()=>VEH.txt.temp,
+   specs:()=>["PT100 platinum probe, -50 to 200 °C","Accurate to about 0.3 °C","Armoured cable resists abrasion","Fits an existing threaded port"],
+   live:()=>sim.last?`${f1(sim.last.filt.temp,0)} °C, limit ${P.limTemp} °C`:"Waiting for first reading", alarm:()=>sim.last&&sim.last.over.includes("temp")},
+  {step:"read",comp:"cur",chip:"Read temperature, vibration, current",title:"Current sensor",
+   text:()=>VEH.txt.cur,
+   specs:()=>["Hall-effect clamp, reads AC and DC","Non-invasive, clamps on in minutes",VEH.txt.curMax,"Electrically isolated from the cable it measures"],
+   live:()=>sim.last?`${f1(sim.last.filt.cur,0)} A, limit ${P.limCur} A`:"Waiting for first reading", alarm:()=>sim.last&&sim.last.over.includes("cur")},
+  {step:"filter",comp:"mcu",chip:"Filter / average sensor readings",title:"Filtering out the bumps",
+   text:()=>VEH.txt.filter,
+   specs:()=>[`Moving average of the last ${P.win} readings`,"Bigger window: calmer, but slower to react","Smaller window: faster, but more false alarms","Try setting the window to 1 in the controls"],
+   live:()=>`${sim.ignored} bump spikes ignored so far`},
+  {step:"compare",comp:"mcu",chip:"COMPARE with normal limits",title:"Comparing with limits",
+   text:"Each filtered reading is checked against its safe limit. If every reading is within its limit the answer is Yes and the machine is healthy. If any reading is over, the answer is No and it needs attention.",
+   specs:()=>[`Vibration limit: ${P.limVib} mm/s`,`Temperature limit: ${P.limTemp} °C`,`Current limit: ${P.limCur} A`,`Limits are set per ${VEH.txt.noun} model`],
+   live:()=>!sim.last?"Waiting for first reading":sim.abnormal?"No: a reading is over its limit":"Yes: all readings within limits", alarm:()=>sim.abnormal},
+  {step:"normal",comp:"logger",chip:"NORMAL: log data",title:"Data logger",
+   text:"Healthy readings are saved with a timestamp. This growing history is the foundation of predictive maintenance: the trend shows a part wearing out weeks before it breaks, so repairs can be planned instead of rushed.",
+   specs:()=>["Industrial flash memory, months of history","Every reading timestamped","Uploaded in batches to save power","Feeds trend and remaining-life analysis"],
+   live:()=>`${sim.logged} normal readings logged`},
+  {step:"abnormal",comp:"radio",chip:"ABNORMAL: raise warning",title:"Wireless alert",
+   text:()=>VEH.txt.radio,
+   specs:()=>[VEH.txt.radioRange,"4G as a backup where there is coverage","Alert arrives within seconds","Logged data uploaded when idle"],
+   live:()=>`${sim.alarms} alarm${sim.alarms===1?"":"s"} sent`, alarm:()=>sim.abnormal},
+  {step:"abnormal",comp:"beacon",chip:"ABNORMAL: raise alarm",title:"Warning beacon",
+   text:()=>VEH.txt.beacon,
+   specs:()=>["High-visibility amber LED","Visible through dust and at night","Only draws power during an alarm","Can be paired with an in-cab buzzer"],
+   live:()=>sim.abnormal?"Flashing now":"Off, all readings normal", alarm:()=>sim.abnormal},
+  {step:"loop",comp:null,chip:"LOOPBACK",title:"Loop back and repeat",
+   text:"Whether the result was normal or abnormal, the system goes straight back to reading the sensors and repeats, around the clock. Powered by the sun, it keeps protecting the machine with no one needing to recharge or rewire anything.",
+   specs:()=>[`${P.loopHz} loops per second`,`${sim.logged+sim.alarms} loops completed so far`,"Self-powered, no maintenance visits","The same node fits trucks, tractors and other machines"],
+   live:()=>sim.on?"Loop running":"Paused until the battery recharges"}
+];
+/* ================= Particles and effects ================= */
+function particles(n,color,size,opacity){
+  const g=new THREE.BufferGeometry(); const pos=new Float32Array(n*3).fill(-999); g.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  const mat=new THREE.PointsMaterial({color,size,map:glowTex,transparent:true,opacity,depthWrite:false});
+  const pts=new THREE.Points(g,mat); pts.frustumCulled=false; scene.add(pts);
+  return {g,pos,life:new Float32Array(n),vel:new Float32Array(n*3),n,mat,i:0};
+}
+const dust=particles(600,0xd2ab85,1.6,.35), smoke=particles(200,0x3a3a3a,1.8,.45);
+function emit(S,x,y,z,vx,vy,vz,life){const i=S.i;S.i=(S.i+1)%S.n;S.pos.set([x,y,z],i*3);S.vel.set([vx,vy,vz],i*3);S.life[i]=life;}
+function stepParticles(S,dt){for(let i=0;i<S.n;i++){if(S.life[i]<=0){S.pos[i*3+1]=-999;continue;}S.life[i]-=dt;for(let k=0;k<3;k++)S.pos[i*3+k]+=S.vel[i*3+k]*dt;S.vel[i*3+1]*=.99;}S.g.attributes.position.needsUpdate=true;}
+const susp={y:0,v:0,pitch:0,pv:0};
+function bodyKick(mag){susp.v+=mag*.035;susp.pv+=(Math.random()-.5)*mag*.004;}
+
+// dim screen behind a focused part
+const dim=new THREE.Mesh(new THREE.PlaneGeometry(60,40),new THREE.MeshBasicMaterial({color:0x0b0f14,transparent:true,opacity:0,depthWrite:false,fog:false}));
+dim.position.z=-8.2; dim.renderOrder=3; camera.add(dim);
+
+/* ================= Labels ================= */
+const tags={};
+function makeTag(key,text,color){const d=document.createElement("div");d.className="tag";d.style.setProperty("--c",color);d.innerHTML=`<span></span><small></small>`;d.querySelector("span").textContent=text;view.appendChild(d);tags[key]=d;return d;}
+COMPS.forEach(c=>makeTag(c.id,c.name,["vib","temp","cur"].includes(c.id)?"#4DBB80":c.id==="beacon"?"#EF5E56":"#F2B41C"));
+makeTag("node","Smart monitoring node","#F2B41C");
+
+
+/* ================= UI state and walkthrough ================= */
+const ui={exploded:false,focus:null,stop:-1,doorT:0,userSpin:0,present:false};
+const info=$("info");
+function fillStop(i){
+  const s=STOPS[i];
+  $("iStep").textContent=s.chip; $("iCount").textContent=`${i+1} of ${STOPS.length}`;
+  $("iTitle").textContent=s.title; $("iText").textContent=typeof s.text==="function"?s.text():s.text;
+  $("iSpecs").innerHTML=s.specs().map(t=>`<li>${t}</li>`).join("");
+  $("iPrev").disabled=i===0; $("iNext").textContent=i===STOPS.length-1?"Finish":"Next";
+  updateLive();
+}
+let swapT=null;
+function openStop(i){
+  if(i<0||i>=STOPS.length||i===ui.stop) return;
+  const wasOpen=info.classList.contains("show");
+  ui.stop=i; const s=STOPS[i];
+  if(ui.focus!==s.comp && s.comp){ const c=CMAP[s.comp]; c.spin=-.35; c.tilt=0; }
+  ui.focus=s.comp;
+  if(!s.comp){ setExplode(true); }
+  const bodyEl=$("iBody");
+  if(!wasOpen){ fillStop(i); info.classList.add("show"); bodyEl.classList.remove("out"); return; }
+  // crossfade the text and glide the card to its new height
+  const h0=info.getBoundingClientRect().height;
+  bodyEl.classList.add("out");
+  clearTimeout(swapT);
+  swapT=setTimeout(()=>{
+    fillStop(i);
+    info.style.height="auto";
+    const h1=info.getBoundingClientRect().height;
+    if(Math.abs(h1-h0)>2&&info.animate) info.animate([{height:h0+"px"},{height:h1+"px"}],{duration:380,easing:"cubic-bezier(.22,1,.36,1)"});
+    info.style.height="";
+    bodyEl.classList.remove("out");
+  },150);
+}
+function closeStop(){ clearTimeout(swapT); ui.stop=-1; ui.focus=null; info.classList.remove("show"); $("iBody").classList.remove("out"); }
+function updateLive(){ if(ui.stop<0) return; const s=STOPS[ui.stop]; const el=$("iLive"); el.textContent="Live: "+s.live(); el.classList.toggle("alarm",!!(s.alarm&&s.alarm())); $("iSpecs").innerHTML=s.specs().map(t=>`<li>${t}</li>`).join(""); }
+$("iNext").onclick=()=>{ if(ui.stop===STOPS.length-1){closeStop();setExplode(false);} else openStop(ui.stop+1); };
+$("iPrev").onclick=()=>{const i=ui.stop-1; if(i>=0) openStop(i);};
+$("iClose").onclick=closeStop;
+function setExplode(v){ if(v!==ui.exploded) Object.assign(orbitGoal,v?VEH.explodeView:VEH.orbit0); ui.exploded=v; $("bExplode").setAttribute("aria-pressed",v); $("bExplode").textContent=v?"Put back together":"Break apart"; }
+$("bExplode").onclick=()=>setExplode(!ui.exploded);
+$("bTour").onclick=()=>openStop(0);
+$("bDump").onclick=()=>{ if(sim.dump<0){ sim.dump=0; sim.midDone=false; addLog(VEH.actionStart,"power"); } };
+$("bReset").onclick=()=>{ Object.assign(orbitGoal,VEH.orbit0); };
+function setPresent(v){
+  ui.present=v; document.body.classList.toggle("present",v);
+  $("bPresent").setAttribute("aria-pressed",v); $("bPresent").textContent=v?"Exit presentation":"Presentation mode";
+  (v?$("flowOverlay"):$("flowHome")).appendChild($("flow"));
+  if(v&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+  if(!v&&document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  setTimeout(resize,50);
+}
+$("bPresent").onclick=()=>setPresent(!ui.present);
+document.addEventListener("fullscreenchange",()=>{ if(!document.fullscreenElement&&ui.present) setPresent(false); });
+Object.values(FN).forEach(n=>n.addEventListener("click",()=>{ const i=STOPS.findIndex(s=>s.step===n.dataset.step); if(i>=0) openStop(i); }));
+document.addEventListener("keydown",e=>{
+  if(e.target.matches("input,select,textarea")) return;
+  if(e.key==="Escape"){ closeStop(); }
+  else if(e.key==="ArrowRight"||(e.key===" "&&ui.stop>=0)){ e.preventDefault(); ui.stop<0?openStop(0):$("iNext").click(); }
+  else if(e.key==="ArrowLeft"&&ui.stop>0){ openStop(ui.stop-1); }
+  else if(e.key==="ArrowUp"||e.key==="ArrowDown"){ /* let the page scroll */ }
+  else if(e.key==="e"||e.key==="E"){ setExplode(!ui.exploded); }
+});
+
+/* ================= Camera and picking ================= */
+const orbit={...VEH.orbit0}, orbitGoal={...VEH.orbit0};
+const pointers=new Map(); let downAt=null;
+const raycaster=new THREE.Raycaster(), ndc=new THREE.Vector2();
+let PICK=[...COMPS.map(c=>c.group),VEH.encl];
+function pick(cx,cy){
+  const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1);
+  raycaster.setFromCamera(ndc,camera);
+  const hit=raycaster.intersectObjects(PICK,true)[0];
+  return hit?hit.object.userData.comp:null;
+}
+canvas.addEventListener("pointerdown",e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);downAt={x:e.clientX,y:e.clientY,t:performance.now()};});
+canvas.addEventListener("pointermove",e=>{
+  if(!pointers.has(e.pointerId)){ hover(e); return; }
+  const prev=pointers.get(e.pointerId); pointers.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pointers.size===2){const pts=[...pointers.values()];const other=[...pointers.entries()].find(([id])=>id!==e.pointerId)[1];
+    const dNow=Math.hypot(pts[0][0]-pts[1][0],pts[0][1]-pts[1][1]),dPrev=Math.hypot(prev[0]-other[0],prev[1]-other[1]);
+    orbitGoal.r=clamp(orbitGoal.r*dPrev/Math.max(dNow,1),VEH.rMin,80);return;}
+  const dx=e.clientX-prev[0], dy=e.clientY-prev[1];
+  if(ui.focus){ const c=CMAP[ui.focus]; c.spin+=dx*.012; c.tilt=clamp(c.tilt+dy*.01,-1.2,1.2); ui.userSpin=2.5; }
+  else { orbitGoal.theta-=dx*.006; orbitGoal.phi=clamp(orbitGoal.phi-dy*.005,.25,1.5); }
+});
+const up=e=>{
+  pointers.delete(e.pointerId);
+  if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6&&performance.now()-downAt.t<500){
+    const id=pick(e.clientX,e.clientY);
+    if(id){ if(ui.focus===id) closeStop(); else { const k=STOPS.findIndex(s=>s.comp===id); if(k>=0) openStop(k); } }
+    else if(ui.focus) closeStop();
+  }
+  downAt=null;
+};
+canvas.addEventListener("pointerup",up); canvas.addEventListener("pointercancel",e=>pointers.delete(e.pointerId));
+canvas.addEventListener("pointerleave",()=>{$("tip").classList.remove("on");});
+canvas.addEventListener("wheel",e=>{e.preventDefault();if(!ui.focus)orbitGoal.r=clamp(orbitGoal.r*(1+Math.sign(e.deltaY)*.09),VEH.rMin,80);},{passive:false});
+let hoverT=0;
+function hover(e){
+  const now=performance.now(); if(now-hoverT<70) return; hoverT=now;
+  const id=pick(e.clientX,e.clientY), tip=$("tip");
+  canvas.style.cursor=id?"pointer":"grab";
+  if(id&&ui.focus!==id){ const r=view.getBoundingClientRect(); if(tip.dataset.id!==id){tip.dataset.id=id;tip.textContent=`Click to explain: ${CMAP[id].name}`;} tip.style.left=(e.clientX-r.left)+"px"; tip.style.top=(e.clientY-r.top)+"px"; tip.classList.add("on"); }
+  else { tip.classList.remove("on"); tip.dataset.id=""; }
+}
+function resize(){const w=view.clientWidth,h=view.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(view); resize();
+
+/* ================= Component transforms ================= */
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const approach=(v,t,s)=>v<t?Math.min(t,v+s):Math.max(t,v-s);
+// frame-rate independent exponential damping
+const damp=(cur,goal,rate,dt)=>cur+(goal-cur)*(1-Math.exp(-rate*dt));
+// critically damped spring: settles fast with no overshoot, independent of frame rate
+function springTo(o,key,goal,omega,dt){
+  const vk=key+"V"; if(o[vk]===undefined) o[vk]=0;
+  if(o[key]===goal&&o[vk]===0) return goal;
+  // sub-step so the motion takes the same wall-clock time at any frame rate
+  let left=dt>.4?.4:dt;
+  const oo=omega*omega;
+  while(left>1e-5){
+    const d=left>.0167?.0167:left; left-=d;
+    const f=1+2*d*omega, hoo=d*oo, fhoo=d*hoo, det=1/(f+fhoo), v=o[vk], x=o[key];
+    o[key]=(f*x+d*v+fhoo*goal)*det;
+    o[vk]=(v+hoo*(goal-x))*det;
+  }
+  if(Math.abs(o[key]-goal)<.0005&&Math.abs(o[vk])<.005){o[key]=goal;o[vk]=0;}
+  return o[key];
+}
+const H=new THREE.Vector3(),Hq=new THREE.Quaternion(),Hs=new THREE.Vector3(),PQ=new THREE.Quaternion(),PS=new THREE.Vector3(),E=new THREE.Vector3(),F=new THREE.Vector3(),FQ=new THREE.Quaternion();
+const fwd=new THREE.Vector3(),rgt=new THREE.Vector3(),upv=new THREE.Vector3(),qa=new THREE.Quaternion(),qb=new THREE.Quaternion(),X1=new THREE.Vector3(1,0,0),Y1=new THREE.Vector3(0,1,0),tmpV=new THREE.Vector3();
+function updateComps(dt){
+  camera.getWorldDirection(fwd); rgt.set(1,0,0).applyQuaternion(camera.quaternion); upv.set(0,1,0).applyQuaternion(camera.quaternion);
+  const narrow=view.clientWidth<820;
+  let maxF=0;
+  if(ui.userSpin>0) ui.userSpin-=dt;
+  COMPS.forEach(c=>{
+    springTo(c,"e",ui.exploded?1:0,5.0,dt); springTo(c,"f",ui.focus===c.id?1:0,6.2,dt);
+    const e=c.e, f=c.f; maxF=Math.max(maxF,f);
+    c.mount.matrixWorld.decompose(H,Hq,Hs);
+    c.parent.getWorldQuaternion(PQ); c.parent.getWorldScale(PS);
+    E.copy(c.explodeV).multiply(PS).applyQuaternion(PQ).add(H);
+    const pos=tmpV.lerpVectors(H,E,e); let sc=Hs.x*(1+(c.eScale-1)*e); const q=qa.copy(Hq);
+    if(f>0){
+      if(ui.focus===c.id&&ui.userSpin<=0) c.spin+=dt*.4;
+      const fs=(ui.present?1.08:1.2)/c.radius;
+      qb.setFromAxisAngle(Y1,c.spin); FQ.copy(camera.quaternion).multiply(qb); qb.setFromAxisAngle(X1,.18+c.tilt); FQ.multiply(qb).multiply(c.focusQ);
+      F.copy(camera.position).addScaledVector(fwd,6.5).addScaledVector(rgt,narrow?0:ui.present?.45:1.25).addScaledVector(upv,narrow?1.0:-.15);
+      const cOff=c.center.clone().multiplyScalar(fs).applyQuaternion(FQ); F.sub(cOff);
+      pos.lerp(F,f); q.slerp(FQ,f); sc+= (fs-sc)*f;
+    }
+    c.group.position.copy(pos); c.group.quaternion.copy(q); c.group.scale.setScalar(sc);
+    (c._h||(c._h=new THREE.Vector3())).copy(H); (c._p||(c._p=new THREE.Vector3())).copy(pos);
+  });
+  // leader lines belong to the exploded view only: fade every one of them out as
+  // soon as a part is brought to the front, so none are left crossing the screen
+  const lineFade=1-maxF;
+  COMPS.forEach(c=>{
+    const vis=c.e>.02&&c.f<.02&&lineFade>.04;
+    c.line.visible=vis;
+    if(vis){
+      const a=c.line.geometry.attributes.position.array;
+      a[0]=c._h.x;a[1]=c._h.y;a[2]=c._h.z;a[3]=c._p.x;a[4]=c._p.y;a[5]=c._p.z;
+      c.line.geometry.attributes.position.needsUpdate=true;
+      c.line.material.opacity=.9*c.e*lineFade;
+    }
+  });
+  dim.material.opacity=maxF*.62; focusLight.intensity=maxF*1.4;
+  const internal=["charge","battery","mcu","logger","radio"];
+  const wantOpen=ui.exploded||internal.includes(ui.focus)||(ui.stop>=7&&ui.stop<=10);
+  springTo(ui,"doorT",wantOpen?1:0,5.5,dt); VEH.door.rotation.y=-1.95*ui.doorT;
+}
+
+/* ================= Main loop ================= */
+const SKY={night:[lin(0x050a14),lin(0x0e1a2c)],dusk:[lin(0x35557f),lin(0xe7a26a)],day:[lin(0x4f8fd0),lin(0xd9e6ee)],grey:[lin(0x8c969e),lin(0xb9bec2)]};
+const cT=new THREE.Color(),cB=new THREE.Color(),v3=new THREE.Vector3();
+let last=performance.now(),wheelAng=0,uiT=0,envPrev=-1;
+// adaptive resolution: keep motion fluid on slower machines
+const perf={acc:0,n:0,level:0,maxDpr:Math.min(devicePixelRatio||1,1.75)};
+function checkPerf(dtMs){
+  perf.acc+=dtMs; perf.n++;
+  if(perf.n<70) return;
+  const avg=perf.acc/perf.n; perf.acc=0; perf.n=0;
+  if(avg>26&&perf.level<2){
+    perf.level++;
+    if(perf.level===1) renderer.setPixelRatio(Math.max(1,perf.maxDpr*.72));
+    else { renderer.setPixelRatio(1); renderer.shadowMap.enabled=false; scene.traverse(o=>{if(o.isMesh)o.castShadow=false;}); }
+    resize();
+  } else if(avg<13&&perf.level>0){
+    perf.level--; renderer.setPixelRatio(perf.level===0?perf.maxDpr:Math.max(1,perf.maxDpr*.72)); resize();
+  }
+}
+function setVehicle(key,initial){
+  if(!initial&&VEH.key===key) return;
+  closeStop(); if(ui.exploded){ui.exploded=false; setExplode(false);}
+  COMPS.forEach(c=>{c.e=0;c.f=0;});
+  VEH=VEHICLES[key]; ENV=ENVS[VEH.env];
+  Object.values(VEHICLES).forEach(v=>v.root.visible=v===VEH);
+  Object.values(ENVS).forEach(e=>e.group.visible=e===ENV);
+  roadMat.color.set(key==="tractor"?0x8c7058:0xc9b6a6); road.scale.y=key==="tractor"?.55:1;
+  mountComps(VEH); PICK=[...COMPS.map(c=>c.group),VEH.encl];
+  Object.assign(orbit,VEH.orbit0); Object.assign(orbitGoal,VEH.orbit0);
+  const c=VEH.ctl;
+  $("speed").max=c.speed.max; setCtrl("speed",c.speed.value);
+  $("payloadLabel").textContent=c.payload.label; setCtrl("payload",c.payload.value);
+  Object.assign($("limCur"),{min:c.limCur.min,max:c.limCur.max,step:c.limCur.step}); setCtrl("limCur",c.limCur.value);
+  $("roughHint").textContent=c.rough.h; setCtrl("rough",c.rough.value);
+  setCtrl("fBearing",0); setCtrl("fCool",0); setCtrl("fElec",0);
+  readControls(); buildScenarios();
+  $("bDump").textContent=VEH.actionLabel; $("lede").textContent=VEH.lede; $("curLabel").textContent=VEH.curLabel; $("mgrTitle").textContent=VEH.managerTitle;
+  document.querySelectorAll("#vehSwitch button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.veh===key));
+  Object.assign(sim,{dump:-1,abnormal:false,last:null,logged:0,alarms:0,ignored:0,engineT:P.ambient+45,bump:0,boot:1.6,
+    buf:{vib:[],temp:[],cur:[]},hist:{vib:[],temp:[],cur:[]},prevRawOver:{vib:false,temp:false,cur:false}});
+  susp.y=susp.v=susp.pitch=susp.pv=0;
+  Object.entries(tags).forEach(([k,t])=>t.style.transform=VEH.tagTf[k]||"");
+  if(!initial){ $("log").innerHTML=""; drawCharts(); }
+  addLog(`Monitor fitted to the ${VEH.name.toLowerCase()}. Power on. START.`,"power");
+}
+document.querySelectorAll("#vehSwitch button").forEach(b=>b.onclick=()=>{
+  if(VEH.key===b.dataset.veh) return;
+  view.classList.add("swap");
+  setTimeout(()=>{ setVehicle(b.dataset.veh); requestAnimationFrame(()=>requestAnimationFrame(()=>view.classList.remove("swap"))); },280);
+});
+setVehicle("truck",true);
+
+function frame(now){
+  if(document.hidden){ last=now; requestAnimationFrame(frame); return; }
+  const frameMs=now-last; const realDt=Math.min(.25,frameMs/1000), dt=Math.min(.05,realDt); last=now;
+  checkPerf(frameMs);
+  const c=CHEM[P.chem], cap=c.v*P.capAh, minE=cap*(1-c.dod);
+  if(sim.E===null) sim.E=cap*.8; sim.E=Math.min(sim.E,cap);
+
+  // clock, sun, sky
+  const dh=realDt*(+P.timeScale)/3600;
+  sim.hour+=dh; if(sim.hour>=24){sim.hour-=24;sim.day++;}
+  if(+P.timeScale>0){$("hour").value=sim.hour;$("hourOut").textContent=hhmm(sim.hour);}
+  const th=PI*(sim.hour-6)/12, elev=Math.sin(th), cloud=P.cloud/100;
+  const dayF=clamp((elev-.05)/.35,0,1), duskF=clamp((elev+.15)/.22,0,1);
+  cT.copy(SKY.night[0]).lerp(SKY.dusk[0],duskF).lerp(SKY.day[0],dayF).lerp(SKY.grey[0],cloud*.7*duskF);
+  cB.copy(SKY.night[1]).lerp(SKY.dusk[1],duskF).lerp(SKY.day[1],dayF).lerp(SKY.grey[1],cloud*.7*duskF);
+  skyU.top.value.copy(cT); skyU.bottom.value.copy(cB); scene.fog.color.copy(cB);
+  sky.position.copy(camera.position); stars.position.copy(camera.position); stars.material.opacity=(1-duskF)*(1-cloud*.8);
+  const sunDir=v3.set(Math.cos(th)*.35,Math.max(elev,-.2),Math.cos(th)).normalize();
+  sunL.position.copy(sunDir).multiplyScalar(80); sunL.target.position.set(0,0,0);
+  sunL.intensity=clamp(elev*3,0,1)*2.1*(1-.7*cloud);
+  sunL.color.setRGB(1,.82+.18*dayF,.62+.36*dayF);
+  sunSprite.position.copy(camera.position).addScaledVector(sunDir,700); sunSprite.visible=elev>-.08&&cloud<.85;
+  sunSprite.material.opacity=1-cloud;
+  hemi.intensity=.08+.35*duskF;
+  const envI=.08+.62*duskF*(1-.4*cloud);
+  if(Math.abs(envI-envPrev)>.01){MATS.forEach(m=>m.envMapIntensity=m===M.glass?envI*1.6:envI);envPrev=envI;}
+  const night=1-duskF; M.lensW.emissiveIntensity=night*3; VEH.headSpot.intensity=night*3.5;
+
+  // energy
+  const pv=P.panelW*Math.max(0,elev)*(1-.75*cloud)*.8;
+  const load=sim.on?P.nodeW+(sim.abnormal?P.radioW:0):0;
+  sim.pv=pv; sim.load=load;
+  sim.E=clamp(sim.E+(pv*.94-load)*dh,0,cap);
+  if(sim.on&&sim.E<=minE){sim.on=false;sim.abnormal=false;addLog(`<b>Battery flat.</b> Node shut down, the ${VEH.txt.noun} is unmonitored.`,"power");}
+  if(!sim.on){sim.offH+=dh;if(sim.E>=minE+.15*cap){sim.on=true;sim.boot=1.6;addLog("Solar recharged the battery. Node restarting at START.","power");}}
+  sim.soc=sim.E/cap;
+
+  // sensor loop
+  if(sim.on){
+    if(sim.boot>0){sim.boot-=realDt;if(sim.boot<=0){sim.acc=0;addLog("MCU and sensors initialised. Reading loop started.","ok");}}
+    else{sim.acc+=realDt*P.loopHz;if(sim.acc>=1){sim.acc-=Math.floor(sim.acc);sample();}}
+  }
+  setFlow(sim.acc%1);
+
+  // vehicle action (dump bed / lift implement)
+  if(sim.dump>=0){
+    sim.dump+=realDt; const T=sim.dump;
+    if(T>3.5&&!sim.midDone){ sim.midDone=true; addLog(VEH.actionMid,"power"); if(VEH.key==="truck"&&P.payload>0){setCtrl("payload",0);readControls();} }
+    if(T>=9){sim.dump=-1;addLog(VEH.actionEnd,"power");}
+  }
+  VEH.updateAction(ease(actionAmt()));
+  VEH.setLoad(P.payload/100);
+
+  // motion
+  const v=effSpeed()/3.6, rough=P.rough/100;
+  ENV.movers.forEach(m=>{m.position.x-=v*dt;if(m.position.x<-180)m.position.x+=360;});
+  groundTex.offset.x+=v*dt/(1400/90); roadTex.offset.x+=v*dt/(1400/40);
+  wheelAng+=v*dt; VEH.wheels.forEach(w=>w.spin.rotation.z=-wheelAng/w.R);
+  const jitter=v>0?(Math.random()-.5)*rough*.035*(v/10):0;
+  susp.v+=(-60*susp.y-6*susp.v)*dt; susp.y+=susp.v*dt;
+  susp.pv+=(-40*susp.pitch-5*susp.pv)*dt; susp.pitch+=susp.pv*dt;
+  const body=VEH.body, sk=VEH.key==="tractor"?.45:1; body.position.y=(susp.y+jitter)*sk; body.rotation.z=susp.pitch*sk; body.rotation.x=susp.pitch*.6*sk;
+  const wob=P.fBearing/100*.05*Math.sin(now/40)*(v>0?1:0); VEH.rearWheels.forEach(w=>w.g.position.y=w.R+wob);
+
+  // camera
+  for(const k in orbit) orbit[k]=damp(orbit[k],orbitGoal[k],7.5,realDt);
+  camera.position.set(orbit.tx+orbit.r*Math.sin(orbit.phi)*Math.cos(orbit.theta),orbit.ty+orbit.r*Math.cos(orbit.phi),orbit.tz+orbit.r*Math.sin(orbit.phi)*Math.sin(orbit.theta));
+  camera.lookAt(orbit.tx,orbit.ty,orbit.tz);
+  scene.updateMatrixWorld();
+  updateComps(realDt);
+
+  // effects
+  const DU=VEH.dust;
+  if(v>.3){for(let i=0;i<Math.ceil(rough*3*v/8);i++){const s=Math.random()<.5?-1:1;emit(dust,DU.x+(Math.random()-.5)*2.5*DU.spread,DU.y,s*(DU.z+Math.random()*DU.spread),-v*.5-Math.random()*2,.6+Math.random()*1.6,s*Math.random()*1.2,1.8+Math.random()*1.2);}}
+  if(VEH.soil&&v>.3&&effLoad()>.1&&Math.random()<.9){v3.set(VEH.soil.x,0,(Math.random()*2-1)*VEH.soil.z);VEH.body.localToWorld(v3);emit(dust,v3.x,.15,v3.z,-v*.3,.4+Math.random(),(Math.random()-.5),1.2);}
+  dust.mat.opacity=.12+rough*.35; stepParticles(dust,dt);
+  const hot=sim.last&&sim.on?clamp((sim.last.filt.temp-(P.limTemp-15))/15,0,1):0;
+  if(hot>0&&Math.random()<hot){v3.set(...VEH.exhaust);VEH.body.localToWorld(v3);emit(smoke,v3.x,v3.y,v3.z,-v*.5-.4,1.6+Math.random(),(Math.random()-.5)*.5,2.5);}
+  stepParticles(smoke,dt);
+  VEH.engineGlow.intensity=hot*4*(.7+.3*Math.sin(now/120));
+  VEH.spark.intensity=P.fElec>35&&Math.random()<P.fElec/220?8:0;
+  const bc=CMAP.beacon.group.userData, alarmOn=sim.abnormal&&sim.on;
+  bc.rotor.rotation.y+=dt*(alarmOn?12:0); bc.light.intensity=alarmOn?3:0; bc.lensMat.emissiveIntensity=alarmOn?.9+.4*Math.sin(now/60):0; bc.ledMat.emissiveIntensity=alarmOn?4:0;
+  const mled=CMAP.mcu.group.userData.led; mled.material.emissiveIntensity=!sim.on?0:(sim.acc%1<.25?4:.6);
+  const L=sim.last, showHalo=!ui.exploded&&!ui.focus;
+  HALOS.forEach(h=>{
+    const cc=CMAP[h.k]; cc.group.getWorldPosition(v3);
+    let col=0x33dd77; if(!sim.on)col=0x777777; else if(L){const r=L.filt[h.k]/L.lim[h.k];col=r>1?0xff3b30:r>.85?0xffb020:0x33dd77;}
+    const p=sim.acc%1; h.s.position.copy(v3); h.s.material.color.setHex(col); h.s.scale.setScalar(.7+p*1.1); h.s.material.opacity=showHalo&&sim.on?.9*(1-p):0;
+  });
+  VEH.packets.forEach(p=>{if(!sim.on||p.t>=1||ui.exploded){p.mesh.visible=false;return;}p.t=Math.min(1,p.t+dt*Math.max(P.loopHz,1)*2);p.mesh.visible=true;p.mesh.position.copy(p.curve.getPoint(p.t));});
+  
+  renderer.render(scene,camera);
+
+  // labels
+  const W=view.clientWidth,Hh=view.clientHeight;
+  const place=(key,world,sub,show)=>{
+    const t=tags[key];
+    if(!show){ t.style.opacity=0; return; }
+    v3.copy(world).project(camera);
+    if(v3.z>1||Math.abs(v3.x)>1.12||Math.abs(v3.y)>1.12){ t.style.opacity=0; return; }
+    t.style.opacity=1; t.style.transform=ui.exploded?"":(VEH.tagTf[key]||"");
+    t.style.left=((v3.x+1)/2*W).toFixed(1)+"px"; t.style.top=((1-v3.y)/2*Hh).toFixed(1)+"px";
+    if(sub!==null) t.querySelector("small").textContent=sub;
+  };
+  uiT+=dt; const refresh=uiT>.2; if(refresh) uiT=0;
+  const anyFocus=COMPS.some(c=>c.f>.05);
+  COMPS.forEach(c=>{
+    c.group.getWorldPosition(v3); const wp=v3.clone(); wp.y+=.35*Math.max(1,c.group.scale.x*c.radius*1.2);
+    let sub=null, show=false;
+    if(ui.exploded&&c.e>.6&&!anyFocus){show=true;sub="";}
+    else if(!ui.exploded&&!anyFocus&&["solar","vib","temp","cur","beacon"].includes(c.id)){show=true;
+      if(refresh){ sub= c.id==="solar"?`${f1(pv)} W now`: c.id==="beacon"?(alarmOn?"flashing":"off"): !L||!sim.on?(sim.on?"waiting":"no power"): c.id==="vib"?`${f1(L.filt.vib)} mm/s`: c.id==="temp"?`${f1(L.filt.temp,0)} °C`:`${f1(L.filt.cur,0)} A`; }
+    }
+    place(c.id,wp,sub,show);
+  });
+  VEH.encl.getWorldPosition(v3); v3.y+=VEH.enclTagY;
+  place("node",v3.clone(),refresh?(!sim.on?"off, battery flat":sim.boot>0?"starting up":alarmOn?"sending alarm":`${load.toFixed(2)} W`):null,!ui.exploded&&!anyFocus);
+
+  if(refresh){
+    updateLive();
+    const st=$("status"); st.className="status"+(!sim.on?" off":sim.abnormal?" alarm":"");
+    st.querySelector("span").textContent=!sim.on?"Node offline":sim.boot>0?"Starting up":sim.abnormal?"Alarm":"Normal";
+    $("clock").textContent=`Day ${sim.day}, ${hhmm(sim.hour)}`;
+    const soc=sim.soc; $("battFill").style.width=(soc*56)+"px"; $("battFill").style.background=soc<(1-c.dod)+.1?"#EF5E56":soc<.4?"#F2B41C":"#4DBB80";
+    $("battPct").textContent=Math.round(soc*100)+"%"; $("pvNow").textContent=`, solar ${pv.toFixed(1)} W`;
+    $("nLogged").textContent=sim.logged; $("nAlarms").textContent=sim.alarms; $("nIgnored").textContent=sim.ignored; $("nOff").textContent=sim.offH.toFixed(1)+" h";
+  }
+  requestAnimationFrame(frame);
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) last=performance.now(); });
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",drawCharts);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
